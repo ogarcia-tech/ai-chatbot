@@ -40,20 +40,21 @@ function aicp_admin_scripts($hook) {
         $settings = get_post_meta($post->ID, '_aicp_assistant_settings', true);
         if (!is_array($settings)) $settings = [];
 
-        $default_avatar = 'https://i.imgur.com/pSxGFiT.png';
-        $default_open_icon = 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>');
+        $default_bot_avatar  = AICP_PLUGIN_URL . 'assets/bot-default-avatar.png';
+        $default_user_avatar = AICP_PLUGIN_URL . 'assets/user-default-avatar.png';
+        $default_open_icon   = 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>');
 
         wp_localize_script('aicp-admin-script', 'aicp_admin_params', [
             'ajax_url' => admin_url('admin-ajax.php'),
             'assistant_id' => $post->ID,
             'delete_nonce' => wp_create_nonce('aicp_delete_log_nonce'),
             'get_log_nonce' => wp_create_nonce('aicp_get_log_nonce'),
-            'default_bot_avatar' => $default_avatar,
-            'default_user_avatar' => $default_avatar,
+            'default_bot_avatar' => $default_bot_avatar,
+            'default_user_avatar' => $default_user_avatar,
             'default_open_icon' => $default_open_icon,
             'initial_settings' => [
-                'bot_avatar_url' => $settings['bot_avatar_url'] ?? $default_avatar,
-                'user_avatar_url' => $settings['user_avatar_url'] ?? $default_avatar,
+                'bot_avatar_url' => $settings['bot_avatar_url'] ?? $default_bot_avatar,
+                'user_avatar_url' => $settings['user_avatar_url'] ?? $default_user_avatar,
                 'open_icon_url' => $settings['open_icon_url'] ?? $default_open_icon,
                 'position' => $settings['position'] ?? 'br',
                 'color_primary' => $settings['color_primary'] ?? '#0073aa',
@@ -122,11 +123,12 @@ function aicp_render_instructions_tab($v) {
 }
 
 function aicp_render_design_tab($v) {
-    $default_avatar = 'https://i.imgur.com/pSxGFiT.png';
-    $default_open_icon = 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>');
-    
-    $bot_avatar = $v['bot_avatar_url'] ?? $default_avatar;
-    $user_avatar = $v['user_avatar_url'] ?? $default_avatar;
+    $default_bot_avatar  = AICP_PLUGIN_URL . 'assets/bot-default-avatar.png';
+    $default_user_avatar = AICP_PLUGIN_URL . 'assets/user-default-avatar.png';
+    $default_open_icon   = 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>');
+
+    $bot_avatar  = $v['bot_avatar_url'] ?? $default_bot_avatar;
+    $user_avatar = $v['user_avatar_url'] ?? $default_user_avatar;
     $open_icon = $v['open_icon_url'] ?? $default_open_icon;
     $position = $v['position'] ?? 'br';
     ?>
