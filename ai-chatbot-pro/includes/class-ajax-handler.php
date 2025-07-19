@@ -16,6 +16,8 @@ class AICP_Ajax_Handler {
         add_action('wp_ajax_nopriv_aicp_submit_feedback', [__CLASS__, 'handle_submit_feedback']);
         add_action('wp_ajax_aicp_submit_feedback', [__CLASS__, 'handle_submit_feedback']);
         add_action('wp_ajax_aicp_manual_capture_lead', [__CLASS__, 'handle_manual_capture_lead']);
+        add_action('wp_ajax_aicp_submit_lead_form', [__CLASS__, 'handle_submit_lead_form']);
+        add_action('wp_ajax_nopriv_aicp_submit_lead_form', [__CLASS__, 'handle_submit_lead_form']);
     }
     
     private static function save_conversation($log_id, $assistant_id, $session_id, $conversation, $lead_data = []) {
@@ -232,5 +234,33 @@ class AICP_Ajax_Handler {
         } else {
             wp_send_json_error(['message' => 'No se pudo guardar el feedback.']);
         }
+    }
+
+    public static function handle_submit_lead_form() {
+        check_ajax_referer('aicp_chat_nonce', 'nonce');
+        $assistant_id = isset($_POST['assistant_id']) ? absint($_POST['assistant_id']) : 0;
+        $answers = isset($_POST['answers']) && is_array($_POST['answers']) ? array_map('sanitize_text_field', $_POST['answers']) : [];
+
+        if (!$assistant_id || empty($answers)) {
+            wp_send_json_error(['message' => __('Datos incompletos.', 'ai-chatbot-pro')]);
+        }
+
+        global $wpdb;
+        $leads_table = $wpdb->prefix . 'aicp_leads';
+        $wpdb->insert(
+            $leads_table,
+            [
+                'log_id'       => 0,
+                'assistant_id' => $assistant_id,
+                'lead_data'    => wp_json_encode($answers, JSON_UNESCAPED_UNICODE),
+                'status'       => 'form',
+                'created_at'   => current_time('mysql'),
+            ],
+            ['%d','%d','%s','%s','%s']
+        );
+
+        do_action('aicp_lead_detected', $answers, $assistant_id, 0, 'form');
+
+        wp_send_json_success(['message' => __('Formulario enviado', 'ai-chatbot-pro')]);
     }
 }

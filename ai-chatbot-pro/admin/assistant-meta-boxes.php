@@ -191,6 +191,7 @@ function aicp_render_leads_tab($assistant_id, $v) {
     }
 
     $hide_icons = $v['hide_lead_icons'] ?? 0;
+    $lead_questions = $v['lead_form_questions'] ?? [];
     ?>
     <p>
         <label>
@@ -198,6 +199,19 @@ function aicp_render_leads_tab($assistant_id, $v) {
             <?php _e('Ocultar iconos de lead en el historial para leads listados aquí', 'ai-chatbot-pro'); ?>
         </label>
     </p>
+    <h4><?php _e('Preguntas del Formulario de Leads', 'ai-chatbot-pro'); ?></h4>
+    <div id="aicp-lead-questions">
+        <?php
+        if (!empty($lead_questions) && is_array($lead_questions)) {
+            foreach ($lead_questions as $question) {
+                echo '<div class="aicp-lead-question"><input type="text" name="aicp_settings[lead_form_questions][]" value="' . esc_attr($question) . '" class="regular-text"> <button type="button" class="button aicp-remove-question">&times;</button></div>';
+            }
+        } else {
+            echo '<div class="aicp-lead-question"><input type="text" name="aicp_settings[lead_form_questions][]" value="" class="regular-text"> <button type="button" class="button aicp-remove-question">&times;</button></div>';
+        }
+        ?>
+    </div>
+    <p><button type="button" class="button" id="aicp-add-question"><?php _e('Añadir pregunta', 'ai-chatbot-pro'); ?></button></p>
     <?php
     if (empty($leads)) {
         echo '<p>' . __('Aún no se han detectado leads.', 'ai-chatbot-pro') . '</p>';
@@ -319,6 +333,11 @@ function aicp_save_meta_box_data($post_id) {
     $current['calendar_url'] = isset($s['calendar_url']) ? esc_url_raw($s['calendar_url']) : '';
     $current['enhanced_lead_detection'] = isset($s['enhanced_lead_detection']) ? 1 : 0;
     $current['hide_lead_icons'] = isset($s['hide_lead_icons']) ? 1 : 0;
+    if (isset($s['lead_form_questions']) && is_array($s['lead_form_questions'])) {
+        $current['lead_form_questions'] = array_filter(array_map('sanitize_text_field', $s['lead_form_questions']));
+    } else {
+        $current['lead_form_questions'] = [];
+    }
     
     // Los campos PRO se guardan vacíos en la versión gratuita
     $current['training_post_types'] = [];

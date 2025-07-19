@@ -100,6 +100,7 @@ class AICP_Frontend_Loader {
         // Obtener configuración de detección de leads
         $enhanced_lead_detection = !empty($s['enhanced_lead_detection']) ? true : false;
         $lead_auto_collect = !empty($s['lead_auto_collect']) ? true : false;
+        $lead_questions = !empty($s['lead_form_questions']) && is_array($s['lead_form_questions']) ? array_values($s['lead_form_questions']) : [];
 
         wp_localize_script('aicp-chatbot-script', 'aicp_chatbot_params', [
             'ajax_url' => admin_url('admin-ajax.php'),
@@ -116,6 +117,7 @@ class AICP_Frontend_Loader {
             'calendar_url' => $calendar_url,
             'enhanced_lead_detection' => $enhanced_lead_detection,
             'lead_auto_collect' => $lead_auto_collect,
+            'lead_questions' => $lead_questions,
         ]);
     }
 
