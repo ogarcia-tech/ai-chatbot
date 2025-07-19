@@ -157,21 +157,24 @@ jQuery(function($) {
     }
 
     function checkLeadCompleteness() {
-        const requiredFields = ['email', 'name', 'phone', 'website'];
-        const missingFields = requiredFields.filter(field => !leadData[field]);
-        
-        if (missingFields.length === 0) {
+        const hasContact = leadData.email || leadData.phone;
+
+        if (hasContact) {
             leadData.isComplete = true;
             isCollectingLeadData = false;
             currentLeadField = null;
-            
+
             // Enviar datos del lead al servidor
             saveLead();
-            
+
             return true;
         }
-        
-        return missingFields;
+
+        const missing = [];
+        if (!leadData.email) missing.push('email');
+        if (!leadData.phone) missing.push('phone');
+
+        return missing;
     }
 
     function askForMissingLeadData(missingFields) {

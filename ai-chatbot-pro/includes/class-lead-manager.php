@@ -97,11 +97,9 @@ class AICP_Lead_Manager {
         // Determinar campos faltantes
         $required_fields = ['name', 'email', 'phone', 'website'];
         $missing_fields = array_diff($required_fields, array_keys($lead_data));
-        
-        // Solo consideramos lead completo si tenemos al menos email o teléfono
-        $is_complete_lead = (isset($lead_data['email']) || isset($lead_data['phone'])) && 
-                           isset($lead_data['name']) && 
-                           isset($lead_data['website']);
+
+        // Un lead se considera completo si tiene email o teléfono
+        $is_complete_lead = isset($lead_data['email']) || isset($lead_data['phone']);
         
         return [
             'has_lead' => $has_contact,
