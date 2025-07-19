@@ -15,6 +15,7 @@ function aicp_add_meta_boxes() {
         echo '<h2 class="nav-tab-wrapper aicp-nav-tab-wrapper">';
         echo '<a href="#aicp-tab-instructions" class="nav-tab nav-tab-active">' . __('Instrucciones', 'ai-chatbot-pro') . '</a>';
         echo '<a href="#aicp-tab-design" class="nav-tab">' . __('Diseño', 'ai-chatbot-pro') . '</a>';
+        echo '<a href="#aicp-tab-leads" class="nav-tab">' . __('Leads', 'ai-chatbot-pro') . '</a>';
         echo '<a href="#aicp-tab-pro" class="nav-tab">' . __('Funciones PRO', 'ai-chatbot-pro') . ' <span class="aicp-pro-tag">PRO</span></a>';
         echo '</h2>';
     });
@@ -89,6 +90,9 @@ function aicp_render_main_meta_box($post) {
             </div>
         </div>
     </div>
+    <div id="aicp-tab-leads" class="aicp-tab-content" style="display:none;">
+        <?php aicp_render_leads_tab($post->ID, $v); ?>
+    </div>
     <div id="aicp-tab-pro" class="aicp-tab-content" style="display:none;">
         <?php aicp_render_pro_tab(); ?>
     </div>
@@ -162,6 +166,58 @@ function aicp_render_preview_panel() {
     <?php
 }
 
+function aicp_render_leads_tab($assistant_id, $v) {
+    global $wpdb;
+    $leads_table = $wpdb->prefix . 'aicp_leads';
+    $logs_table  = $wpdb->prefix . 'aicp_chat_logs';
+
+    $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $leads_table));
+    if ($table_exists === $leads_table) {
+        $leads = $wpdb->get_results($wpdb->prepare("SELECT name, email, phone, website, created_at FROM $leads_table WHERE assistant_id = %d ORDER BY id DESC LIMIT 50", $assistant_id));
+    } else {
+        $rows = $wpdb->get_results($wpdb->prepare("SELECT lead_data, timestamp FROM $logs_table WHERE assistant_id = %d AND has_lead = 1 ORDER BY id DESC LIMIT 50", $assistant_id));
+        $leads = [];
+        foreach ($rows as $row) {
+            $data = json_decode($row->lead_data, true) ?: [];
+            $leads[] = (object) [
+                'name'      => $data['name'] ?? '',
+                'email'     => $data['email'] ?? '',
+                'phone'     => $data['phone'] ?? '',
+                'website'   => $data['website'] ?? '',
+                'created_at'=> $row->timestamp,
+            ];
+        }
+    }
+
+    $hide_icons = $v['hide_lead_icons'] ?? 0;
+    ?>
+    <p>
+        <label>
+            <input type="checkbox" name="aicp_settings[hide_lead_icons]" value="1" <?php checked($hide_icons, 1); ?>>
+            <?php _e('Ocultar iconos de lead en el historial para leads listados aquí', 'ai-chatbot-pro'); ?>
+        </label>
+    </p>
+    <?php
+    if (empty($leads)) {
+        echo '<p>' . __('Aún no se han detectado leads.', 'ai-chatbot-pro') . '</p>';
+        return;
+    }
+
+    echo '<table class="wp-list-table widefat fixed striped">';
+    echo '<thead><tr><th>' . __('Fecha', 'ai-chatbot-pro') . '</th><th>' . __('Nombre', 'ai-chatbot-pro') . '</th><th>' . __('Email', 'ai-chatbot-pro') . '</th><th>' . __('Teléfono', 'ai-chatbot-pro') . '</th><th>' . __('Web', 'ai-chatbot-pro') . '</th></tr></thead>';
+    echo '<tbody>';
+    foreach ($leads as $lead) {
+        echo '<tr>';
+        echo '<td>' . date_i18n(get_option('date_format') . ' H:i', strtotime($lead->created_at)) . '</td>';
+        echo '<td>' . esc_html($lead->name) . '</td>';
+        echo '<td>' . esc_html($lead->email) . '</td>';
+        echo '<td>' . esc_html($lead->phone) . '</td>';
+        echo '<td>' . esc_html($lead->website) . '</td>';
+        echo '</tr>';
+    }
+    echo '</tbody></table>';
+}
+
 function aicp_render_pro_tab() {
     ?>
     <div class="aicp-pro-feature-wrapper">
@@ -185,6 +241,9 @@ function aicp_render_chat_history_meta_box($post) {
     global $wpdb;
     $table_name = $wpdb->prefix . 'aicp_chat_logs';
     $logs = $wpdb->get_results($wpdb->prepare("SELECT id, timestamp, has_lead, first_user_message FROM $table_name WHERE assistant_id = %d ORDER BY id DESC LIMIT 20", $post->ID));
+
+    $settings = get_post_meta($post->ID, '_aicp_assistant_settings', true);
+    $hide_icons = $settings['hide_lead_icons'] ?? 0;
     
     $leads_count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_name WHERE assistant_id = %d AND has_lead = 1", $post->ID));
     $history_count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_name WHERE assistant_id = %d", $post->ID));
@@ -214,7 +273,9 @@ function aicp_render_chat_history_meta_box($post) {
             echo '<tr data-log-id="' . $log->id . '">';
             echo '<td>' . date_i18n(get_option('date_format') . ' H:i', strtotime($log->timestamp)) . '</td>';
             echo '<td>' . esc_html(wp_trim_words($log->first_user_message, 15, '...')) . '</td>';
-            echo '<td class="lead-col">' . ($log->has_lead ? '✅' : '❌') . '</td>';
+            $icon = $log->has_lead ? '✅' : '❌';
+            if ($hide_icons && $log->has_lead) { $icon = ''; }
+            echo '<td class="lead-col">' . $icon . '</td>';
             echo '<td><button class="button button-secondary aicp-view-log-details" data-log-id="' . $log->id . '">' . __('Ver Detalles', 'ai-chatbot-pro') . '</button></td>';
             echo '</tr>';
         }
@@ -257,6 +318,7 @@ function aicp_save_meta_box_data($post_id) {
     // Nuevos campos
     $current['calendar_url'] = isset($s['calendar_url']) ? esc_url_raw($s['calendar_url']) : '';
     $current['enhanced_lead_detection'] = isset($s['enhanced_lead_detection']) ? 1 : 0;
+    $current['hide_lead_icons'] = isset($s['hide_lead_icons']) ? 1 : 0;
     
     // Los campos PRO se guardan vacíos en la versión gratuita
     $current['training_post_types'] = [];
