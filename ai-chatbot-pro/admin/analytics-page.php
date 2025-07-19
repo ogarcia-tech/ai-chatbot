@@ -22,6 +22,8 @@ add_action('admin_menu', 'aicp_add_analytics_page');
 function aicp_render_analytics_page() {
     global $wpdb;
     $logs_table = $wpdb->prefix . 'aicp_chat_logs';
+
+    $assistant_id = isset($_GET['post']) ? intval($_GET['post']) : 0;
     $stats = class_exists('AICP_Lead_Manager') ? AICP_Lead_Manager::get_lead_stats($assistant_id) : [];
     $total_conversations = $wpdb->get_var("SELECT COUNT(DISTINCT session_id) FROM $logs_table");
     $total_leads = $wpdb->get_var("SELECT COUNT(*) FROM $logs_table WHERE has_lead = 1");

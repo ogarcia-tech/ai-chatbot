@@ -12,3 +12,4 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
 require_once __DIR__ . '/includes/class-installer.php';
 
 AICP_Installer::uninstall();
+

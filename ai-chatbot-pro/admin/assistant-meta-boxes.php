@@ -40,27 +40,28 @@ function aicp_admin_scripts($hook) {
         $settings = get_post_meta($post->ID, '_aicp_assistant_settings', true);
         if (!is_array($settings)) $settings = [];
 
-        $default_avatar = 'https://i.imgur.com/pSxGFiT.png';
-        $default_open_icon = 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>');
+        $default_bot_avatar  = AICP_PLUGIN_URL . 'assets/bot-default-avatar.png';
+        $default_user_avatar = AICP_PLUGIN_URL . 'assets/user-default-avatar.png';
+        $default_open_icon   = 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>');
 
         wp_localize_script('aicp-admin-script', 'aicp_admin_params', [
             'ajax_url' => admin_url('admin-ajax.php'),
             'assistant_id' => $post->ID,
             'delete_nonce' => wp_create_nonce('aicp_delete_log_nonce'),
             'get_log_nonce' => wp_create_nonce('aicp_get_log_nonce'),
-            'default_bot_avatar' => $default_avatar,
-            'default_user_avatar' => $default_avatar,
+            'default_bot_avatar' => $default_bot_avatar,
+            'default_user_avatar' => $default_user_avatar,
             'default_open_icon' => $default_open_icon,
             'initial_settings' => [
-                'bot_avatar_url' => $settings['bot_avatar_url'] ?? $default_avatar,
-                'user_avatar_url' => $settings['user_avatar_url'] ?? $default_avatar,
+                'bot_avatar_url' => $settings['bot_avatar_url'] ?? $default_bot_avatar,
+                'user_avatar_url' => $settings['user_avatar_url'] ?? $default_user_avatar,
                 'open_icon_url' => $settings['open_icon_url'] ?? $default_open_icon,
                 'position' => $settings['position'] ?? 'br',
                 'color_primary' => $settings['color_primary'] ?? '#0073aa',
-                'color_bot_bg' => $settings['color_bot_bg'] ?? '#ffff',
-                'color_bot_text' => $settings['color_bot_text'] ?? '#3333',
+                'color_bot_bg' => $settings['color_bot_bg'] ?? '#ffffff',
+                'color_bot_text' => $settings['color_bot_text'] ?? '#333333',
                 'color_user_bg' => $settings['color_user_bg'] ?? '#dcf8c6',
-                'color_user_text' => $settings['color_user_text'] ?? '#0000',
+                'color_user_text' => $settings['color_user_text'] ?? '#000000',
             ]
         ]);
     }
@@ -122,11 +123,12 @@ function aicp_render_instructions_tab($v) {
 }
 
 function aicp_render_design_tab($v) {
-    $default_avatar = 'https://i.imgur.com/pSxGFiT.png';
-    $default_open_icon = 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>');
-    
-    $bot_avatar = $v['bot_avatar_url'] ?? $default_avatar;
-    $user_avatar = $v['user_avatar_url'] ?? $default_avatar;
+    $default_bot_avatar  = AICP_PLUGIN_URL . 'assets/bot-default-avatar.png';
+    $default_user_avatar = AICP_PLUGIN_URL . 'assets/user-default-avatar.png';
+    $default_open_icon   = 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>');
+
+    $bot_avatar  = $v['bot_avatar_url'] ?? $default_bot_avatar;
+    $user_avatar = $v['user_avatar_url'] ?? $default_user_avatar;
     $open_icon = $v['open_icon_url'] ?? $default_open_icon;
     $position = $v['position'] ?? 'br';
     ?>
@@ -138,8 +140,8 @@ function aicp_render_design_tab($v) {
         <tr><th><h3><?php _e('Posición y Colores', 'ai-chatbot-pro'); ?></h3></th><td><hr></td></tr>
         <tr><th><label for="aicp_position"><?php _e('Posición del Widget', 'ai-chatbot-pro'); ?></label></th><td><select name="aicp_settings[position]" id="aicp_position"><option value="br" <?php selected($position, 'br'); ?>><?php _e('Abajo a la Derecha', 'ai-chatbot-pro'); ?></option><option value="bl" <?php selected($position, 'bl'); ?>><?php _e('Abajo a la Izquierda', 'ai-chatbot-pro'); ?></option></select></td></tr>
         <tr><th><label><?php _e('Color Principal', 'ai-chatbot-pro'); ?></label></th><td><input type="text" name="aicp_settings[color_primary]" value="<?php echo esc_attr($v['color_primary'] ?? '#0073aa'); ?>" class="aicp-color-picker" data-preview-var="--aicp-color-primary"></td></tr>
-        <tr><th><label><?php _e('Burbuja del Bot', 'ai-chatbot-pro'); ?></label></th><td><label><?php _e('Fondo:', 'ai-chatbot-pro'); ?> <input type="text" name="aicp_settings[color_bot_bg]" value="<?php echo esc_attr($v['color_bot_bg'] ?? '#ffff'); ?>" class="aicp-color-picker" data-preview-var="--aicp-color-bot-bg"></label> <label><?php _e('Texto:', 'ai-chatbot-pro'); ?> <input type="text" name="aicp_settings[color_bot_text]" value="<?php echo esc_attr($v['color_bot_text'] ?? '#3333'); ?>" class="aicp-color-picker" data-preview-var="--aicp-color-bot-text"></label></td></tr>
-        <tr><th><label><?php _e('Burbuja del Usuario', 'ai-chatbot-pro'); ?></label></th><td><label><?php _e('Fondo:', 'ai-chatbot-pro'); ?> <input type="text" name="aicp_settings[color_user_bg]" value="<?php echo esc_attr($v['color_user_bg'] ?? '#dcf8c6'); ?>" class="aicp-color-picker" data-preview-var="--aicp-color-user-bg"></label> <label><?php _e('Texto:', 'ai-chatbot-pro'); ?> <input type="text" name="aicp_settings[color_user_text]" value="<?php echo esc_attr($v['color_user_text'] ?? '#0000'); ?>" class="aicp-color-picker" data-preview-var="--aicp-color-user-text"></label></td></tr>
+        <tr><th><label><?php _e('Burbuja del Bot', 'ai-chatbot-pro'); ?></label></th><td><label><?php _e('Fondo:', 'ai-chatbot-pro'); ?> <input type="text" name="aicp_settings[color_bot_bg]" value="<?php echo esc_attr($v['color_bot_bg'] ?? '#ffffff'); ?>" class="aicp-color-picker" data-preview-var="--aicp-color-bot-bg"></label> <label><?php _e('Texto:', 'ai-chatbot-pro'); ?> <input type="text" name="aicp_settings[color_bot_text]" value="<?php echo esc_attr($v['color_bot_text'] ?? '#333333'); ?>" class="aicp-color-picker" data-preview-var="--aicp-color-bot-text"></label></td></tr>
+        <tr><th><label><?php _e('Burbuja del Usuario', 'ai-chatbot-pro'); ?></label></th><td><label><?php _e('Fondo:', 'ai-chatbot-pro'); ?> <input type="text" name="aicp_settings[color_user_bg]" value="<?php echo esc_attr($v['color_user_bg'] ?? '#dcf8c6'); ?>" class="aicp-color-picker" data-preview-var="--aicp-color-user-bg"></label> <label><?php _e('Texto:', 'ai-chatbot-pro'); ?> <input type="text" name="aicp_settings[color_user_text]" value="<?php echo esc_attr($v['color_user_text'] ?? '#000000'); ?>" class="aicp-color-picker" data-preview-var="--aicp-color-user-text"></label></td></tr>
     </table>
     <?php
 }
@@ -247,10 +249,10 @@ function aicp_save_meta_box_data($post_id) {
     $current['open_icon_url'] = isset($s['open_icon_url']) ? esc_url_raw($s['open_icon_url']) : '';
     $current['position'] = isset($s['position']) ? sanitize_key($s['position']) : 'br';
     $current['color_primary'] = isset($s['color_primary']) ? sanitize_hex_color($s['color_primary']) : '#0073aa';
-    $current['color_bot_bg'] = isset($s['color_bot_bg']) ? sanitize_hex_color($s['color_bot_bg']) : '#ffff';
-    $current['color_bot_text'] = isset($s['color_bot_text']) ? sanitize_hex_color($s['color_bot_text']) : '#3333';
+    $current['color_bot_bg'] = isset($s['color_bot_bg']) ? sanitize_hex_color($s['color_bot_bg']) : '#ffffff';
+    $current['color_bot_text'] = isset($s['color_bot_text']) ? sanitize_hex_color($s['color_bot_text']) : '#333333';
     $current['color_user_bg'] = isset($s['color_user_bg']) ? sanitize_hex_color($s['color_user_bg']) : '#dcf8c6';
-    $current['color_user_text'] = isset($s['color_user_text']) ? sanitize_hex_color($s['color_user_text']) : '#0000';
+    $current['color_user_text'] = isset($s['color_user_text']) ? sanitize_hex_color($s['color_user_text']) : '#000000';
     
     // Nuevos campos
     $current['calendar_url'] = isset($s['calendar_url']) ? esc_url_raw($s['calendar_url']) : '';

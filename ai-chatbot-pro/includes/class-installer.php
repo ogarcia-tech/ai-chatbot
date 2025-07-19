@@ -61,9 +61,34 @@ class AICP_Installer {
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
-        
+
         // Verificar y añadir campos que puedan faltar en instalaciones antiguas
         self::ensure_table_fields($table_name);
+
+        // Tabla para almacenar leads detectados
+        $leads_table = $wpdb->prefix . 'aicp_leads';
+        $sql_leads = "CREATE TABLE $leads_table (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            log_id bigint(20) unsigned NOT NULL,
+            assistant_id bigint(20) unsigned NOT NULL,
+            email varchar(255) DEFAULT '',
+            name varchar(255) DEFAULT '',
+            phone varchar(100) DEFAULT '',
+            website varchar(255) DEFAULT '',
+            lead_data longtext DEFAULT NULL,
+            status varchar(20) DEFAULT 'partial',
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            calendar_accessed_at datetime DEFAULT NULL,
+            PRIMARY KEY  (id),
+            KEY log_id (log_id),
+            KEY assistant_id (assistant_id),
+            KEY status (status)
+        ) $charset_collate;";
+
+        dbDelta($sql_leads);
+
+        // Asegurar campos para la tabla de leads
+        self::ensure_table_fields($leads_table);
     }
     
     /**
@@ -75,31 +100,53 @@ class AICP_Installer {
         // Obtener columnas actuales
         $columns = $wpdb->get_col("DESC $table_name", 0);
         
-        // Campos que deben existir con sus definiciones
-        $required_fields = [
-            'has_lead' => 'TINYINT(1) DEFAULT 0',
-            'lead_data' => 'LONGTEXT DEFAULT NULL',
-            'ip_address' => 'VARCHAR(45) DEFAULT NULL',
-            'user_agent' => 'TEXT DEFAULT NULL',
-            'feedback' => 'TINYINT(1) DEFAULT NULL'
-        ];
-        
+        // Campos e índices requeridos según la tabla
+        if (strpos($table_name, 'aicp_chat_logs') !== false) {
+            $required_fields = [
+                'has_lead' => 'TINYINT(1) DEFAULT 0',
+                'lead_data' => 'LONGTEXT DEFAULT NULL',
+                'ip_address' => 'VARCHAR(45) DEFAULT NULL',
+                'user_agent' => 'TEXT DEFAULT NULL',
+                'feedback' => 'TINYINT(1) DEFAULT NULL'
+            ];
+
+            $required_indexes = [
+                'has_lead' => "ADD INDEX has_lead (has_lead)",
+                'timestamp' => "ADD INDEX timestamp (timestamp)"
+            ];
+        } elseif (strpos($table_name, 'aicp_leads') !== false) {
+            $required_fields = [
+                'email' => "VARCHAR(255) DEFAULT ''",
+                'name' => "VARCHAR(255) DEFAULT ''",
+                'phone' => "VARCHAR(100) DEFAULT ''",
+                'website' => "VARCHAR(255) DEFAULT ''",
+                'lead_data' => 'LONGTEXT DEFAULT NULL',
+                'status' => "VARCHAR(20) DEFAULT 'partial'",
+                'created_at' => 'DATETIME DEFAULT CURRENT_TIMESTAMP',
+                'calendar_accessed_at' => 'DATETIME DEFAULT NULL'
+            ];
+
+            $required_indexes = [
+                'log_id' => 'ADD INDEX log_id (log_id)',
+                'assistant_id' => 'ADD INDEX assistant_id (assistant_id)',
+                'status' => 'ADD INDEX status (status)'
+            ];
+        } else {
+            $required_fields = [];
+            $required_indexes = [];
+        }
+
         // Añadir campos faltantes
         foreach ($required_fields as $field => $definition) {
             if (!in_array($field, $columns)) {
                 $wpdb->query("ALTER TABLE $table_name ADD $field $definition");
             }
         }
-        
+
         // Añadir índices si no existen
         $indexes = $wpdb->get_results("SHOW INDEX FROM $table_name");
         $existing_indexes = array_column($indexes, 'Key_name');
-        
-        $required_indexes = [
-            'has_lead' => "ADD INDEX has_lead (has_lead)",
-            'timestamp' => "ADD INDEX timestamp (timestamp)"
-        ];
-        
+
         foreach ($required_indexes as $index_name => $index_sql) {
             if (!in_array($index_name, $existing_indexes)) {
                 $wpdb->query("ALTER TABLE $table_name $index_sql");
@@ -243,6 +290,7 @@ class AICP_Installer {
         $logs_table  = $wpdb->prefix . 'aicp_chat_logs';
         $leads_table = $wpdb->prefix . 'aicp_leads';
         $wpdb->query("DROP TABLE IF EXISTS $logs_table");
+
         $wpdb->query("DROP TABLE IF EXISTS $leads_table");
         
         // Eliminar opciones

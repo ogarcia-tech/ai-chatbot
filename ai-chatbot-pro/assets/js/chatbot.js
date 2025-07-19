@@ -1,5 +1,5 @@
 /**
- * Lógica del frontend para AI Chatbot Pro v5.0
+ * Lógica del frontend para AI Chatbot Pro v5.1.0
  * Incluye detección de leads y funcionalidad de calendario
  */
 jQuery(function($) {
@@ -30,7 +30,7 @@ jQuery(function($) {
     // --- HTML y UI ---
     function buildChatHTML() {
         const closeIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>`;
-        const sendIcon = `<svg xmlns="http://www.w3.org/2000/24 24" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>`;
+        const sendIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>`;
 
         const chatbotHTML = `
         <div id="aicp-chat-window">
@@ -157,21 +157,24 @@ jQuery(function($) {
     }
 
     function checkLeadCompleteness() {
-        const requiredFields = ['email', 'name', 'phone', 'website'];
-        const missingFields = requiredFields.filter(field => !leadData[field]);
-        
-        if (missingFields.length === 0) {
+        const hasContact = leadData.email || leadData.phone;
+
+        if (hasContact) {
             leadData.isComplete = true;
             isCollectingLeadData = false;
             currentLeadField = null;
-            
+
             // Enviar datos del lead al servidor
             saveLead();
-            
+
             return true;
         }
-        
-        return missingFields;
+
+        const missing = [];
+        if (!leadData.email) missing.push('email');
+        if (!leadData.phone) missing.push('phone');
+
+        return missing;
     }
 
     function askForMissingLeadData(missingFields) {
@@ -219,8 +222,10 @@ jQuery(function($) {
                     // Si hay URL de calendario, ofrecer cita con enlace real
                     if (params.calendar_url) {
                         setTimeout(() => {
-                            addMessageToChat('bot', 
-                                "¡Perfecto! Aquí tienes la URL del calendario para que puedas reservar una llamada con nuestro equipo en el momento que mejor te convenga: [URL del calendario]"
+                            addMessageToChat(
+                                'bot',
+                                '¡Perfecto! Aquí tienes la URL del calendario para que puedas reservar una llamada con nuestro equipo en el momento que mejor te convenga.',
+                                true
                             );
                         }, 1500);
                     }
