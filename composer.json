@@ -1,0 +1,6 @@
+{
+    "name": "ai-chatbot-pro/ai-chatbot",
+    "require-dev": {
+        "wp-phpunit/wp-phpunit": "^6"
+    }
+}
