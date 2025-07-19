@@ -17,4 +17,31 @@ class Lead_Manager_Test extends WP_UnitTestCase {
         $this->assertArrayHasKey( 'phone', $result['data'] );
         $this->assertEmpty( $result['missing_fields'] );
     }
+
+    public function test_send_lead_to_webhook() {
+        update_option( 'aicp_settings', [ 'lead_webhook_url' => 'https://example.com' ] );
+
+        $lead_data    = [ 'email' => 'test@example.com' ];
+        $assistant_id = 5;
+        $log_id       = 10;
+        $status       = 'complete';
+
+        $captured = [];
+        add_filter( 'pre_http_request', function ( $pre, $args, $url ) use ( &$captured ) {
+            $captured['url']  = $url;
+            $captured['body'] = $args['body'];
+            return [ 'body' => '', 'headers' => [], 'response' => [ 'code' => 200 ] ];
+        }, 10, 3 );
+
+        AICP_Lead_Manager::send_lead_to_webhook( $lead_data, $assistant_id, $log_id, $status );
+
+        remove_all_filters( 'pre_http_request' );
+
+        $this->assertSame( 'https://example.com', $captured['url'] );
+        $payload = json_decode( $captured['body'], true );
+        $this->assertSame( $lead_data, $payload['lead_data'] );
+        $this->assertSame( $assistant_id, $payload['assistant_id'] );
+        $this->assertSame( $log_id, $payload['log_id'] );
+        $this->assertSame( $status, $payload['lead_status'] );
+    }
 }
