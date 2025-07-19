@@ -19,8 +19,6 @@ class AICP_Frontend_Loader {
         // AJAX handlers para funcionalidades de lead
         add_action('wp_ajax_aicp_save_lead', [__CLASS__, 'handle_save_lead']);
         add_action('wp_ajax_nopriv_aicp_save_lead', [__CLASS__, 'handle_save_lead']);
-        add_action('wp_ajax_aicp_mark_calendar_lead', [__CLASS__, 'handle_mark_calendar_lead']);
-        add_action('wp_ajax_nopriv_aicp_mark_calendar_lead', [__CLASS__, 'handle_mark_calendar_lead']);
     }
 
     private static function get_active_assistant() {
@@ -155,114 +153,26 @@ class AICP_Frontend_Loader {
             'source' => 'chatbot_detection'
         ];
 
-        // Guardar en la tabla de leads
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'aicp_leads';
-
-        $result = $wpdb->insert(
-            $table_name,
-            [
-                'log_id' => $log_id,
-                'assistant_id' => $assistant_id,
-                'email' => $sanitized_lead_data['email'],
-                'name' => $sanitized_lead_data['name'],
-                'phone' => $sanitized_lead_data['phone'],
-                'website' => $sanitized_lead_data['website'],
-                'lead_data' => json_encode($sanitized_lead_data),
-                'status' => $sanitized_lead_data['is_complete'] ? 'complete' : 'partial',
-                'created_at' => $sanitized_lead_data['collected_at']
-            ],
-            ['%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s']
-        );
-
-        if ($result !== false) {
-            // Actualizar el log de conversación para marcar que tiene lead
-            $wpdb->update(
-                $wpdb->prefix . 'aicp_chat_logs',
-                ['has_lead' => 1, 'lead_status' => $sanitized_lead_data['is_complete'] ? 'complete' : 'partial'],
-                ['id' => $log_id],
-                ['%d', '%s'],
-                ['%d']
-            );
-
-            wp_send_json_success(['message' => 'Lead guardado correctamente']);
-        } else {
-            wp_send_json_error(['message' => 'Error al guardar el lead']);
-        }
-    }
-
-    /**
-     * Maneja el marcado de leads de calendario
-     */
-    public static function handle_mark_calendar_lead() {
-        // Verificar nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'aicp_calendar_nonce')) {
-            wp_die('Nonce verification failed');
-        }
-
-        $log_id = intval($_POST['log_id']);
-        $assistant_id = intval($_POST['assistant_id']);
-
-        if (!$log_id || !$assistant_id) {
-            wp_send_json_error(['message' => 'Datos incompletos']);
-        }
-
+        // Guardar datos en la tabla de logs
         global $wpdb;
 
-        // Actualizar el log para marcar que se accedió al calendario
-        $result = $wpdb->update(
+        $updated = $wpdb->update(
             $wpdb->prefix . 'aicp_chat_logs',
             [
-                'has_lead' => 1,
-                'lead_status' => 'calendar_accessed',
-                'calendar_accessed_at' => current_time('mysql')
+                'has_lead'    => 1,
+                'lead_data'   => wp_json_encode($sanitized_lead_data, JSON_UNESCAPED_UNICODE),
+                'lead_status' => $sanitized_lead_data['is_complete'] ? 'complete' : 'partial'
             ],
             ['id' => $log_id],
             ['%d', '%s', '%s'],
             ['%d']
         );
 
-        // También crear/actualizar el registro en la tabla de leads
-        $table_name = $wpdb->prefix . 'aicp_leads';
-        
-        // Verificar si ya existe un lead para este log
-        $existing_lead = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$table_name} WHERE log_id = %d",
-            $log_id
-        ));
-
-        if ($existing_lead) {
-            // Actualizar lead existente
-            $wpdb->update(
-                $table_name,
-                [
-                    'status' => 'calendar_accessed',
-                    'calendar_accessed_at' => current_time('mysql')
-                ],
-                ['log_id' => $log_id],
-                ['%s', '%s'],
-                ['%d']
-            );
+        if ($updated !== false) {
+            wp_send_json_success(['message' => 'Lead guardado correctamente']);
         } else {
-            // Crear nuevo lead de calendario
-            $wpdb->insert(
-                $table_name,
-                [
-                    'log_id' => $log_id,
-                    'assistant_id' => $assistant_id,
-                    'status' => 'calendar_accessed',
-                    'lead_data' => json_encode(['source' => 'calendar_click']),
-                    'created_at' => current_time('mysql'),
-                    'calendar_accessed_at' => current_time('mysql')
-                ],
-                ['%d', '%d', '%s', '%s', '%s', '%s']
-            );
-        }
-
-        if ($result !== false) {
-            wp_send_json_success(['message' => 'Lead de calendario marcado correctamente']);
-        } else {
-            wp_send_json_error(['message' => 'Error al marcar el lead de calendario']);
+            wp_send_json_error(['message' => 'Error al guardar el lead']);
         }
     }
+
 }
