@@ -115,35 +115,6 @@ jQuery(function($) {
         });
     }
 
-    function handleCaptureLead() {
-        $('#aicp-chat-history-container').on('click', '.aicp-capture-lead', function(e) {
-            e.preventDefault();
-            const logId = $(this).data('log-id');
-            const $btn = $(this);
-            $btn.prop('disabled', true).text('Procesando...');
-            $.ajax({
-                url: aicp_admin_params.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'aicp_manual_capture_lead',
-                    nonce: aicp_admin_params.capture_lead_nonce,
-                    log_id: logId
-                },
-                success: function(response) {
-                    if (response.success) {
-                        $btn.text('Lead Capturado');
-                    } else {
-                        alert(response.data.message || 'No se encontró lead');
-                        $btn.prop('disabled', false).text('Capturar Lead');
-                    }
-                },
-                error: function() {
-                    alert('Error de conexión');
-                    $btn.prop('disabled', false).text('Capturar Lead');
-                }
-            });
-        });
-    }
 
     function handleLivePreview(element, value) {
         const $el = $(element);
@@ -198,7 +169,6 @@ jQuery(function($) {
         handleMediaUploader();
         handleHistoryModal();
         handleDeleteLogFromModal();
-        handleCaptureLead();
         initLivePreview();
     }
 });
