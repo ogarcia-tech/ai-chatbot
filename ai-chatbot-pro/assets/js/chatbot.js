@@ -55,7 +55,6 @@ jQuery(function($) {
             <span class="aicp-close-icon">${closeIcon}</span>
         </button>
         <button id="aicp-lead-form-btn" class="aicp-lead-form-btn">Solicitar Información</button>
-        <div id="aicp-lead-form-overlay"><form id="aicp-lead-form"><h3>Solicitud de Información</h3><div class="aicp-lead-fields"></div><p><button type="submit" class="button">Enviar</button> <button type="button" id="aicp-lead-cancel" class="button">Cancelar</button></p></form></div>
         `;
         $('#aicp-chatbot-container').addClass(`position-${params.position}`).html(chatbotHTML);
         renderSuggestedReplies();
@@ -417,25 +416,35 @@ jQuery(function($) {
         });
     }
 
-    function buildLeadFields() {
-        const $fields = $('#aicp-lead-form .aicp-lead-fields');
-        if (!$fields.length) return;
-        $fields.empty();
+    function buildLeadFieldsHtml() {
+        let html = '';
         if (Array.isArray(params.lead_questions) && params.lead_questions.length > 0) {
             params.lead_questions.forEach((q, i) => {
-                const field = `<div class="aicp-lead-field"><label>${q}</label><input type="text" name="lead_${i}" required></div>`;
-                $fields.append(field);
+                html += `<div class="aicp-lead-field"><label>${q}</label><input type="text" name="lead_${i}" required></div>`;
             });
         }
+        return html;
+    }
+
+    function addHtmlMessageToChat(role, html) {
+        const $chatBody = $('.aicp-chat-body');
+        const avatarSrc = (role === 'bot') ? params.bot_avatar : params.user_avatar;
+        const messageHTML = `
+        <div class="aicp-chat-message ${role}">
+            <div class="aicp-message-avatar">
+                <img src="${avatarSrc}" alt="Avatar de ${role}">
+            </div>
+            <div class="aicp-message-bubble">${html}</div>
+        </div>`;
+        $chatBody.append(messageHTML);
+        scrollToBottom();
     }
 
     function showLeadForm() {
-        buildLeadFields();
-        $('#aicp-lead-form-overlay').fadeIn(200);
-    }
-
-    function hideLeadForm() {
-        $('#aicp-lead-form-overlay').fadeOut(200);
+        if ($('#aicp-lead-form').length) return;
+        const fields = buildLeadFieldsHtml();
+        const formHtml = `<form id="aicp-lead-form" class="aicp-lead-form">${fields}<p><button type="submit" class="aicp-lead-send-btn">Enviar</button></p></form>`;
+        addHtmlMessageToChat('bot', formHtml);
     }
 
     function submitLeadForm(e) {
@@ -452,8 +461,8 @@ jQuery(function($) {
             answers: answers
         }, function(response){
             if(response.success){
-                alert('¡Gracias! Hemos recibido tu solicitud.');
-                hideLeadForm();
+                $('#aicp-lead-form').closest('.aicp-chat-message').remove();
+                addMessageToChat('bot', '¡Gracias! Hemos recibido tu solicitud.');
             } else {
                 alert('Error al enviar el formulario');
             }
@@ -465,12 +474,10 @@ jQuery(function($) {
         buildChatHTML();
         $(document).on('click', '#aicp-chat-toggle-button', toggleChatWindow);
         $(document).on('click', '#aicp-lead-form-btn', showLeadForm);
-        $(document).on('click', '#aicp-lead-cancel', hideLeadForm);
         $(document).on('submit', '#aicp-lead-form', submitLeadForm);
         $(document).on('submit', '#aicp-chat-form', handleFormSubmit);
         $(document).on('click', '.aicp-suggested-reply', handleSuggestedReplyClick);
         $(document).on('click', '.aicp-feedback-btn', handleFeedbackClick);
         $(document).on('click', '.aicp-calendar-link', handleCalendarClick);
-        buildLeadFields();
     }
 });

@@ -94,8 +94,8 @@
 .aicp-chat-footer button svg { width: 20px; height: 20px; }
 
 /* Formulario de leads */
-#aicp-lead-form-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:10001; }
-#aicp-lead-form { background:#fff; padding:20px; border-radius:8px; max-width:400px; width:90%; }
-#aicp-lead-form h3 { margin-top:0; }
-#aicp-lead-form .aicp-lead-field { margin-bottom:10px; }
+#aicp-lead-form { background:#f7f7f7; padding:10px; border-radius:8px; }
+#aicp-lead-form .aicp-lead-field { margin-bottom:8px; }
+#aicp-lead-form input[type="text"] { width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; }
+#aicp-lead-send-btn { margin-top:8px; background: var(--aicp-color-primary); color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; }
 #aicp-lead-form-btn { margin-top:10px; width:100%; background: var(--aicp-color-primary); color:#fff; border:none; padding:10px; border-radius:4px; cursor:pointer; }
