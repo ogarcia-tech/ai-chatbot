@@ -54,21 +54,42 @@ class AICP_Export_Functions {
                 }
             }
         } else { // Leads
-            $headers = ['timestamp'];
-            $all_keys = [];
+            $field_map = [
+                'name'    => 'NOMBRE',
+                'email'   => 'EMAIL',
+                'phone'   => 'TELEFONO',
+                'website' => 'WEB',
+            ];
+
+            $additional_keys = [];
             foreach ($data as $row) {
                 $lead_data = json_decode($row['lead_data'], true);
-                if(is_array($lead_data)) $all_keys = array_merge($all_keys, array_keys($lead_data));
-            }
-            $headers = array_merge($headers, array_unique($all_keys));
-            fputcsv($output, $headers);
-            foreach ($data as $row) {
-                $lead_data = json_decode($row['lead_data'], true);
-                $csv_row = [$row['timestamp']];
-                foreach ($headers as $header) {
-                    if($header === 'timestamp') continue;
-                    $csv_row[] = $lead_data[$header] ?? '';
+                if (is_array($lead_data)) {
+                    $additional_keys = array_merge(
+                        $additional_keys,
+                        array_diff(array_keys($lead_data), array_keys($field_map))
+                    );
                 }
+            }
+            $additional_keys = array_unique($additional_keys);
+
+            $headers = array_merge(['timestamp'], array_values($field_map), $additional_keys);
+            fputcsv($output, $headers);
+
+            foreach ($data as $row) {
+                $lead_data = json_decode($row['lead_data'], true);
+                $csv_row = [
+                    $row['timestamp'],
+                    $lead_data['name'] ?? '',
+                    $lead_data['email'] ?? '',
+                    $lead_data['phone'] ?? '',
+                    $lead_data['website'] ?? '',
+                ];
+
+                foreach ($additional_keys as $key) {
+                    $csv_row[] = $lead_data[$key] ?? '';
+                }
+
                 fputcsv($output, $csv_row);
             }
         }
