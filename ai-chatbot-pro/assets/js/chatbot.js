@@ -11,6 +11,7 @@ jQuery(function($) {
     let isChatOpen = false;
     let isThinking = false;
     let isChatEnded = false;
+    const autoCollect = !!params.lead_auto_collect;
     let leadData = {
         email: null,
         name: null,
@@ -281,6 +282,9 @@ jQuery(function($) {
         
         // Detectar datos de lead en el mensaje del usuario
         const leadDetected = detectLeadData(message);
+        if (autoCollect && leadDetected && !leadData.isComplete) {
+            checkLeadCompleteness();
+        }
         
         conversationHistory.push({ role: 'user', content: message });
         addMessageToChat('user', message);
@@ -329,13 +333,15 @@ jQuery(function($) {
                         botReply.toLowerCase().includes(keyword)
                     );
                     
-                    addMessageToChat('bot', botReply);
-                    
-                    // Si sugiere contacto y no tenemos lead completo, empezar recolección
-                    if (suggestsContact && !leadData.isComplete) {
-                        const missingFields = checkLeadCompleteness();
-                        if (missingFields !== true && missingFields.length > 0) {
-                            askForMissingLeadData(missingFields);
+                    if (!isChatEnded) {
+                        addMessageToChat('bot', botReply);
+
+                        // Si sugiere contacto y no tenemos lead completo, empezar recolección
+                        if (suggestsContact && !leadData.isComplete) {
+                            const missingFields = checkLeadCompleteness();
+                            if (missingFields !== true && missingFields.length > 0) {
+                                askForMissingLeadData(missingFields);
+                            }
                         }
                     }
                 } else { 

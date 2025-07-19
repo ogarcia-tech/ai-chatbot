@@ -140,22 +140,43 @@ class AICP_Lead_Manager {
         
         if ($lead_info['has_lead']) {
             global $wpdb;
-            $table_name = $wpdb->prefix . 'aicp_chat_logs';
-            
+            $table_name  = $wpdb->prefix . 'aicp_chat_logs';
+            $leads_table = $wpdb->prefix . 'aicp_leads';
+
             $lead_status = $lead_info['is_complete'] ? 'complete' : 'partial';
-            
+
             $wpdb->update(
                 $table_name,
                 [
-                    'has_lead' => 1,
-                    'lead_data' => wp_json_encode($lead_info['data'], JSON_UNESCAPED_UNICODE),
-                    'lead_status' => $lead_status
+                    'has_lead'   => 1,
+                    'lead_data'  => wp_json_encode($lead_info['data'], JSON_UNESCAPED_UNICODE),
+                    'lead_status'=> $lead_status
                 ],
                 ['id' => $log_id],
                 ['%d', '%s', '%s'],
                 ['%d']
             );
-            
+
+            // Insertar en la tabla de leads si no existe
+            $exists = $wpdb->get_var($wpdb->prepare("SELECT id FROM $leads_table WHERE log_id = %d", $log_id));
+            if (!$exists) {
+                $wpdb->insert(
+                    $leads_table,
+                    [
+                        'log_id'       => $log_id,
+                        'assistant_id' => $assistant_id,
+                        'email'        => $lead_info['data']['email'] ?? '',
+                        'name'         => $lead_info['data']['name'] ?? '',
+                        'phone'        => $lead_info['data']['phone'] ?? '',
+                        'website'      => $lead_info['data']['website'] ?? '',
+                        'lead_data'    => wp_json_encode($lead_info['data'], JSON_UNESCAPED_UNICODE),
+                        'status'       => $lead_status,
+                        'created_at'   => current_time('mysql')
+                    ],
+                    ['%d','%d','%s','%s','%s','%s','%s','%s']
+                );
+            }
+
             // Hook para integraciones externas
             do_action('aicp_lead_detected', $lead_info['data'], $assistant_id, $log_id, $lead_status);
         }
