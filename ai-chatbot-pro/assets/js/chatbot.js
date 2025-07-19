@@ -219,8 +219,10 @@ jQuery(function($) {
                     // Si hay URL de calendario, ofrecer cita con enlace real
                     if (params.calendar_url) {
                         setTimeout(() => {
-                            addMessageToChat('bot', 
-                                "¡Perfecto! Aquí tienes la URL del calendario para que puedas reservar una llamada con nuestro equipo en el momento que mejor te convenga: [URL del calendario]"
+                            addMessageToChat(
+                                'bot',
+                                '¡Perfecto! Aquí tienes la URL del calendario para que puedas reservar una llamada con nuestro equipo en el momento que mejor te convenga.',
+                                true
                             );
                         }, 1500);
                     }
