@@ -50,6 +50,7 @@ function aicp_admin_scripts($hook) {
             'assistant_id' => $post->ID,
             'delete_nonce' => wp_create_nonce('aicp_delete_log_nonce'),
             'get_log_nonce' => wp_create_nonce('aicp_get_log_nonce'),
+            'capture_lead_nonce' => wp_create_nonce('aicp_capture_lead_nonce'),
             'default_bot_avatar' => $default_bot_avatar,
             'default_user_avatar' => $default_user_avatar,
             'default_open_icon' => $default_open_icon,
@@ -267,16 +268,16 @@ function aicp_render_chat_history_meta_box($post) {
         echo '<p>' . __('No hay conversaciones registradas.', 'ai-chatbot-pro') . '</p>';
     } else {
         echo '<table class="wp-list-table widefat fixed striped aicp-logs-table">';
-        echo '<thead><tr><th style="width:180px;">' . __('Fecha', 'ai-chatbot-pro') . '</th><th>' . __('Inicio de la Conversación', 'ai-chatbot-pro') . '</th><th style="width:100px;">' . __('Lead', 'ai-chatbot-pro') . '</th><th style="width:120px;">' . __('Acciones', 'ai-chatbot-pro') . '</th></tr></thead>';
+        echo '<thead><tr><th style="width:180px;">' . __('Fecha', 'ai-chatbot-pro') . '</th><th>' . __('Inicio de la Conversación', 'ai-chatbot-pro') . '</th><th style="width:160px;">' . __('Acciones', 'ai-chatbot-pro') . '</th></tr></thead>';
         echo '<tbody>';
         foreach ($logs as $log) {
             echo '<tr data-log-id="' . $log->id . '">';
             echo '<td>' . date_i18n(get_option('date_format') . ' H:i', strtotime($log->timestamp)) . '</td>';
             echo '<td>' . esc_html(wp_trim_words($log->first_user_message, 15, '...')) . '</td>';
-            $icon = $log->has_lead ? '✅' : '❌';
-            if ($hide_icons && $log->has_lead) { $icon = ''; }
-            echo '<td class="lead-col">' . $icon . '</td>';
-            echo '<td><button class="button button-secondary aicp-view-log-details" data-log-id="' . $log->id . '">' . __('Ver Detalles', 'ai-chatbot-pro') . '</button></td>';
+            echo '<td>';
+            echo '<button class="button button-secondary aicp-view-log-details" data-log-id="' . $log->id . '">' . __('Ver Detalles', 'ai-chatbot-pro') . '</button> ';
+            echo '<button class="button button-primary aicp-capture-lead" data-log-id="' . $log->id . '">' . __('Capturar Lead', 'ai-chatbot-pro') . '</button>';
+            echo '</td>';
             echo '</tr>';
         }
         echo '</tbody></table>';
