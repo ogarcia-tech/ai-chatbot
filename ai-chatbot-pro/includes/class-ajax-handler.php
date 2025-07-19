@@ -15,6 +15,7 @@ class AICP_Ajax_Handler {
         add_action('wp_ajax_aicp_get_log_details', [__CLASS__, 'handle_get_log_details']);
         add_action('wp_ajax_nopriv_aicp_submit_feedback', [__CLASS__, 'handle_submit_feedback']);
         add_action('wp_ajax_aicp_submit_feedback', [__CLASS__, 'handle_submit_feedback']);
+        add_action('wp_ajax_aicp_manual_capture_lead', [__CLASS__, 'handle_manual_capture_lead']);
     }
     
     private static function save_conversation($log_id, $assistant_id, $session_id, $conversation, $lead_data = []) {
@@ -145,6 +146,72 @@ class AICP_Ajax_Handler {
             'lead_data' => json_decode($log->lead_data, true),
             'has_lead' => (bool)$log->has_lead
         ]);
+    }
+
+    public static function handle_manual_capture_lead() {
+        check_ajax_referer('aicp_capture_lead_nonce', 'nonce');
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error(['message' => __('No tienes permisos.', 'ai-chatbot-pro')]);
+        }
+
+        $log_id = isset($_POST['log_id']) ? absint($_POST['log_id']) : 0;
+        if (!$log_id) {
+            wp_send_json_error(['message' => __('ID de log inválido.', 'ai-chatbot-pro')]);
+        }
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'aicp_chat_logs';
+        $log = $wpdb->get_row($wpdb->prepare("SELECT conversation_log, assistant_id FROM $table WHERE id = %d", $log_id));
+
+        if (!$log) {
+            wp_send_json_error(['message' => __('Log no encontrado.', 'ai-chatbot-pro')]);
+        }
+
+        $conversation = json_decode($log->conversation_log, true);
+        if (!class_exists('AICP_Lead_Manager')) {
+            wp_send_json_error(['message' => __('Función no disponible.', 'ai-chatbot-pro')]);
+        }
+
+        $lead_info = AICP_Lead_Manager::detect_contact_data($conversation);
+
+        if (!$lead_info['has_lead']) {
+            wp_send_json_error(['message' => __('No se detectó información de contacto.', 'ai-chatbot-pro')]);
+        }
+
+        $lead_status = $lead_info['is_complete'] ? 'complete' : 'partial';
+
+        $wpdb->update(
+            $table,
+            [
+                'has_lead'   => 1,
+                'lead_data'  => wp_json_encode($lead_info['data'], JSON_UNESCAPED_UNICODE),
+                'lead_status'=> $lead_status
+            ],
+            ['id' => $log_id],
+            ['%d','%s','%s'],
+            ['%d']
+        );
+
+        $leads_table = $wpdb->prefix . 'aicp_leads';
+        $wpdb->insert(
+            $leads_table,
+            [
+                'log_id'       => $log_id,
+                'assistant_id' => $log->assistant_id,
+                'email'        => $lead_info['data']['email'] ?? '',
+                'name'         => $lead_info['data']['name'] ?? '',
+                'phone'        => $lead_info['data']['phone'] ?? '',
+                'website'      => $lead_info['data']['website'] ?? '',
+                'lead_data'    => wp_json_encode($lead_info['data'], JSON_UNESCAPED_UNICODE),
+                'status'       => $lead_status,
+                'created_at'   => current_time('mysql')
+            ],
+            ['%d','%d','%s','%s','%s','%s','%s','%s']
+        );
+
+        do_action('aicp_lead_detected', $lead_info['data'], $log->assistant_id, $log_id, $lead_status);
+
+        wp_send_json_success(['lead' => $lead_info['data']]);
     }
 
     public static function handle_submit_feedback() {
