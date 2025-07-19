@@ -11,6 +11,7 @@ if (!defined('WP_UNINSTALL_PLUGIN')) exit;
 delete_option('aicp_settings');
 delete_option('aicp_db_version');
 
-// Eliminar tabla de logs
+// Eliminar tablas
 global $wpdb;
 $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}aicp_chat_logs");
+$wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}aicp_leads");
