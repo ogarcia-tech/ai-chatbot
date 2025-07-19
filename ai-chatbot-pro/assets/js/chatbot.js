@@ -10,6 +10,7 @@ jQuery(function($) {
     let logId = 0;
     let isChatOpen = false;
     let isThinking = false;
+    let isChatEnded = false;
     let leadData = {
         email: null,
         name: null,
@@ -229,6 +230,8 @@ jQuery(function($) {
                             );
                         }, 1500);
                     }
+
+                    setTimeout(finalizeChat, 2500);
                 }
             },
             error: function() {
@@ -255,9 +258,17 @@ jQuery(function($) {
         scrollToBottom();
     }
 
-    function removeThinkingIndicator() { 
-        isThinking = false; 
-        $('.aicp-bot-thinking').remove(); 
+    function removeThinkingIndicator() {
+        isThinking = false;
+        $('.aicp-bot-thinking').remove();
+    }
+
+    function finalizeChat() {
+        if (isChatEnded) return;
+        isChatEnded = true;
+        addMessageToChat('bot', 'Chat finalizado.');
+        $('#aicp-chat-input').prop('disabled', true);
+        $('#aicp-send-button').prop('disabled', true);
     }
     
     function scrollToBottom() { 
@@ -266,7 +277,7 @@ jQuery(function($) {
     }
 
     function sendMessage(message) {
-        if (!message || isThinking) return;
+        if (!message || isThinking || isChatEnded) return;
         
         // Detectar datos de lead en el mensaje del usuario
         const leadDetected = detectLeadData(message);

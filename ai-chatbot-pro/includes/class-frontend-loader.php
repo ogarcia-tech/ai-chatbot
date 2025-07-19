@@ -167,8 +167,28 @@ class AICP_Frontend_Loader {
             ['%d', '%s', '%s'],
             ['%d']
         );
-
         if ($updated !== false) {
+            $leads_table = $wpdb->prefix . 'aicp_leads';
+            $status      = $sanitized_lead_data['is_complete'] ? 'complete' : 'partial';
+
+            $wpdb->insert(
+                $leads_table,
+                [
+                    'log_id'       => $log_id,
+                    'assistant_id' => $assistant_id,
+                    'email'        => $sanitized_lead_data['email'] ?? '',
+                    'name'         => $sanitized_lead_data['name'] ?? '',
+                    'phone'        => $sanitized_lead_data['phone'] ?? '',
+                    'website'      => $sanitized_lead_data['website'] ?? '',
+                    'lead_data'    => wp_json_encode($sanitized_lead_data, JSON_UNESCAPED_UNICODE),
+                    'status'       => $status,
+                    'created_at'   => current_time('mysql'),
+                ],
+                ['%d','%d','%s','%s','%s','%s','%s','%s']
+            );
+
+            do_action('aicp_lead_detected', $sanitized_lead_data, $assistant_id, $log_id, $status);
+
             wp_send_json_success(['message' => 'Lead guardado correctamente']);
         } else {
             wp_send_json_error(['message' => 'Error al guardar el lead']);
