@@ -115,6 +115,18 @@ jQuery(function($) {
         });
     }
 
+    function handleLeadQuestions() {
+        $('#aicp-add-question').on('click', function() {
+            const $wrapper = $('#aicp-lead-questions');
+            const field = '<div class="aicp-lead-question"><input type="text" name="aicp_settings[lead_form_questions][]" class="regular-text"> <button type="button" class="button aicp-remove-question">&times;</button></div>';
+            $wrapper.append(field);
+        });
+
+        $('#aicp-lead-questions').on('click', '.aicp-remove-question', function() {
+            $(this).closest('.aicp-lead-question').remove();
+        });
+    }
+
 
     function handleLivePreview(element, value) {
         const $el = $(element);
@@ -169,6 +181,7 @@ jQuery(function($) {
         handleMediaUploader();
         handleHistoryModal();
         handleDeleteLogFromModal();
+        handleLeadQuestions();
         initLivePreview();
     }
 });
