@@ -26,9 +26,10 @@ add_action('admin_menu', 'aicp_add_settings_page');
  * Registra los ajustes.
  */
 function aicp_register_general_settings() {
-    register_setting('aicp_settings_group', 'aicp_settings');
+    register_setting('aicp_settings_group', 'aicp_settings', 'aicp_general_settings_sanitize');
     add_settings_section('aicp_api_key_section', __('Ajustes de la API de OpenAI', 'ai-chatbot-pro'), null, 'aicp-settings');
     add_settings_field('aicp_api_key', __('API Key', 'ai-chatbot-pro'), 'aicp_api_key_field_render', 'aicp-settings', 'aicp_api_key_section');
+    add_settings_field('aicp_lead_webhook_url', __('Webhook de Leads', 'ai-chatbot-pro'), 'aicp_lead_webhook_url_field_render', 'aicp-settings', 'aicp_api_key_section');
 }
 add_action('admin_init', 'aicp_register_general_settings');
 
@@ -39,6 +40,15 @@ function aicp_api_key_field_render() {
     $options = get_option('aicp_settings');
     $api_key = isset($options['api_key']) ? esc_attr($options['api_key']) : '';
     echo '<input type="password" name="aicp_settings[api_key]" value="' . $api_key . '" class="regular-text" placeholder="' . __('Introduce tu clave API aquí', 'ai-chatbot-pro') . '">';
+}
+
+/**
+ * Renderiza el campo de webhook de leads.
+ */
+function aicp_lead_webhook_url_field_render() {
+    $options = get_option('aicp_settings');
+    $url = isset($options['lead_webhook_url']) ? esc_attr($options['lead_webhook_url']) : '';
+    echo '<input type="url" name="aicp_settings[lead_webhook_url]" value="' . $url . '" class="regular-text" placeholder="' . __('URL para enviar leads', 'ai-chatbot-pro') . '">';
 }
 
 /**
@@ -55,4 +65,21 @@ function aicp_render_settings_page() {
         </form>
     </div>
     <?php
+}
+
+/**
+ * Sanitiza las opciones de ajustes generales.
+ */
+function aicp_general_settings_sanitize($input) {
+    $sanitized = [];
+
+    if (isset($input['api_key'])) {
+        $sanitized['api_key'] = sanitize_text_field($input['api_key']);
+    }
+
+    if (isset($input['lead_webhook_url'])) {
+        $sanitized['lead_webhook_url'] = esc_url_raw($input['lead_webhook_url']);
+    }
+
+    return $sanitized;
 }

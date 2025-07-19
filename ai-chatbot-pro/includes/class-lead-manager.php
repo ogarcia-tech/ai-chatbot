@@ -33,6 +33,9 @@ class AICP_Lead_Manager {
         
         // Hook para procesar leads después de guardar conversación
         add_action('aicp_conversation_saved', [__CLASS__, 'process_lead_data'], 10, 3);
+
+        // Enviar lead a webhook si se configura
+        add_action('aicp_lead_detected', [__CLASS__, 'send_lead_to_webhook'], 10, 4);
     }
     
     /**
@@ -155,6 +158,33 @@ class AICP_Lead_Manager {
             
             // Hook para integraciones externas
             do_action('aicp_lead_detected', $lead_info['data'], $assistant_id, $log_id, $lead_status);
+        }
+    }
+
+    /**
+     * Enviar los datos del lead a la URL configurada.
+     */
+    public static function send_lead_to_webhook($lead_data, $assistant_id, $log_id, $lead_status) {
+        $options = get_option('aicp_settings');
+        $url = isset($options['lead_webhook_url']) ? esc_url_raw($options['lead_webhook_url']) : '';
+
+        if (!$url) {
+            return;
+        }
+
+        $response = wp_remote_post($url, [
+            'headers' => ['Content-Type' => 'application/json'],
+            'body'    => wp_json_encode([
+                'lead_data'    => $lead_data,
+                'assistant_id' => $assistant_id,
+                'log_id'       => $log_id,
+                'lead_status'  => $lead_status,
+            ]),
+            'timeout' => 15,
+        ]);
+
+        if (is_wp_error($response)) {
+            error_log('AICP Lead Webhook error: ' . $response->get_error_message());
         }
     }
     
