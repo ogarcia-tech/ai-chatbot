@@ -54,7 +54,11 @@ class AICP_Ajax_Handler {
      
       if($log_id > 0) { $wpdb->update($table_name, $data, ['id' => $log_id], $format, ['%d']); }
 
-        else { $wpdb->insert($table_name, $data, $format); $log_id = $wpdb->insert_id; do_action('aicp_conversation_saved', $log_id, $assistant_id, $conversation);
+        else {
+            $wpdb->insert($table_name, $data, $format);
+            $log_id = $wpdb->insert_id;
+            do_action('aicp_conversation_saved', $log_id, $assistant_id, $conversation);
+        }
 
         return $log_id;
     }
