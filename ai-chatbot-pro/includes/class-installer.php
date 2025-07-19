@@ -239,9 +239,11 @@ class AICP_Installer {
     public static function uninstall() {
         global $wpdb;
         
-        // Eliminar tablas
-        $table_name = $wpdb->prefix . 'aicp_chat_logs';
-        $wpdb->query("DROP TABLE IF EXISTS $table_name");
+        // Eliminar tablas personalizadas
+        $logs_table  = $wpdb->prefix . 'aicp_chat_logs';
+        $leads_table = $wpdb->prefix . 'aicp_leads';
+        $wpdb->query("DROP TABLE IF EXISTS $logs_table");
+        $wpdb->query("DROP TABLE IF EXISTS $leads_table");
         
         // Eliminar opciones
         delete_option('aicp_settings');
