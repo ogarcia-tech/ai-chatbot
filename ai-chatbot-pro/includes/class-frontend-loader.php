@@ -98,7 +98,7 @@ class AICP_Frontend_Loader {
         $calendar_url = !empty($s['calendar_url']) ? esc_url($s['calendar_url']) : '';
 
         // Obtener configuración de detección de leads
-        $lead_detection_enabled = !empty($s['lead_detection_enabled']) ? true : false;
+        $enhanced_lead_detection = !empty($s['enhanced_lead_detection']) ? true : false;
         $lead_auto_collect = !empty($s['lead_auto_collect']) ? true : false;
 
         wp_localize_script('aicp-chatbot-script', 'aicp_chatbot_params', [
@@ -114,7 +114,7 @@ class AICP_Frontend_Loader {
             'open_icon' => !empty($s['open_icon_url']) ? esc_url($s['open_icon_url']) : $default_bot_avatar,
             'suggested_messages' => $suggested_messages,
             'calendar_url' => $calendar_url,
-            'lead_detection_enabled' => $lead_detection_enabled,
+            'enhanced_lead_detection' => $enhanced_lead_detection,
             'lead_auto_collect' => $lead_auto_collect,
         ]);
     }
