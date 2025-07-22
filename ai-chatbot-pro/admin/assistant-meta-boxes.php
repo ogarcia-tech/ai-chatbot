@@ -191,6 +191,18 @@ function aicp_render_leads_tab($assistant_id, $v) {
     echo '</tbody></table>';
 
 
+    $closing = $v['lead_closing_messages'] ?? [];
+    echo '<h4>' . __('Mensajes de Cierre', 'ai-chatbot-pro') . '</h4>';
+    echo '<table class="form-table"><tbody>';
+    for ($i = 0; $i < 3; $i++) {
+        $val = esc_attr($closing[$i] ?? '');
+        $label = sprintf(__('Mensaje %d', 'ai-chatbot-pro'), $i + 1);
+        echo '<tr><th><label>' . esc_html($label) . '</label></th><td><input type="text" name="aicp_settings[lead_closing_messages][]" value="' . $val . '" class="regular-text"></td></tr>';
+    }
+    echo '</tbody></table>';
+
+
+
 
     if (empty($leads)) {
         echo '<p>' . __('Aún no se han detectado leads.', 'ai-chatbot-pro') . '</p>';
@@ -307,6 +319,12 @@ function aicp_save_meta_box_data($post_id) {
         $current['lead_prompts'] = array_map('sanitize_text_field', $s['lead_prompts']);
     } else {
         $current['lead_prompts'] = [];
+    }
+
+    if (isset($s['lead_closing_messages']) && is_array($s['lead_closing_messages'])) {
+        $current['lead_closing_messages'] = array_map('sanitize_text_field', $s['lead_closing_messages']);
+    } else {
+        $current['lead_closing_messages'] = [];
     }
 
     // Nuevos campos

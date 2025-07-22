@@ -195,7 +195,8 @@ class AICP_Ajax_Handler {
             wp_send_json_error(['message' => __('No se detectó información de contacto.', 'ai-chatbot-pro')]);
         }
 
-        $lead_status = $lead_info['is_complete'] ? 'complete' : 'partial';
+        $lead_info['data']['source'] = 'button';
+        $lead_status = 'button';
 
         $wpdb->update(
             $table,
