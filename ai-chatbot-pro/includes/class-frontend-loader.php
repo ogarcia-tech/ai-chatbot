@@ -143,32 +143,38 @@ class AICP_Frontend_Loader {
         }
 
         // Sanitizar datos del lead
+        $source = sanitize_text_field($lead_data['source'] ?? 'chatbot_detection');
+
         $sanitized_lead_data = [
-            'email' => sanitize_email($lead_data['email'] ?? ''),
-            'name' => sanitize_text_field($lead_data['name'] ?? ''),
-            'phone' => sanitize_text_field($lead_data['phone'] ?? ''),
-            'website' => esc_url_raw($lead_data['website'] ?? ''),
+            'email'       => sanitize_email($lead_data['email'] ?? ''),
+            'name'        => sanitize_text_field($lead_data['name'] ?? ''),
+            'phone'       => sanitize_text_field($lead_data['phone'] ?? ''),
+            'website'     => esc_url_raw($lead_data['website'] ?? ''),
             'is_complete' => !empty($lead_data['isComplete']),
-            'collected_at' => current_time('mysql'),
-            'source' => 'chatbot_detection'
+            'collected_at'=> current_time('mysql'),
+            'source'      => $source
         ];
 
         // Guardar datos en la tabla de logs
         global $wpdb;
+
+        $status = $sanitized_lead_data['is_complete'] ? 'complete' : 'partial';
+        if ($sanitized_lead_data['source'] === 'button') {
+            $status = 'button';
+        }
 
         $updated = $wpdb->update(
             $wpdb->prefix . 'aicp_chat_logs',
             [
                 'has_lead'    => 1,
                 'lead_data'   => wp_json_encode($sanitized_lead_data, JSON_UNESCAPED_UNICODE),
-                'lead_status' => $sanitized_lead_data['is_complete'] ? 'complete' : 'partial'
+                'lead_status' => $status
             ],
             ['id' => $log_id],
             ['%d', '%s', '%s'],
             ['%d']
         );
         if ($updated !== false) {
-            $status = $sanitized_lead_data['is_complete'] ? 'complete' : 'partial';
 
             do_action('aicp_lead_detected', $sanitized_lead_data, $assistant_id, $log_id, $status);
 
