@@ -489,8 +489,6 @@ function renderSuggestedReplies() {
         $(document).on('click', '.aicp-suggested-reply', handleSuggestedReplyClick);
         $(document).on('click', '.aicp-feedback-btn', handleFeedbackClick);
         $(document).on('click', '.aicp-calendar-link', handleCalendarClick);
-
         $(document).on('click', '#aicp-capture-lead-btn', handleCaptureLeadClick);
-
     }
 });
