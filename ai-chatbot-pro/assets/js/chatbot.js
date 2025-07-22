@@ -52,6 +52,7 @@ jQuery(function($) {
                     <input type="text" id="aicp-chat-input" placeholder="Escribe un mensaje..." autocomplete="off">
                     <button type="submit" id="aicp-send-button" aria-label="Enviar mensaje">${sendIcon}</button>
                 </form>
+                <button type="button" id="aicp-capture-lead-btn">Enviar contacto</button>
             </div>
         </div>
         <button id="aicp-chat-toggle-button" aria-label="Abrir chat">
@@ -457,6 +458,28 @@ function renderSuggestedReplies() {
         });
     }
 
+    function handleCaptureLeadClick() {
+        $.ajax({
+            url: params.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'aicp_capture_lead',
+                nonce: params.nonce,
+                assistant_id: params.assistant_id,
+                log_id: logId,
+                conversation: conversationHistory
+            },
+            success: (res) => {
+                if (res.success) {
+                    addMessageToChat('bot', '¡Gracias! Hemos registrado tu interés. ✅');
+                } else {
+                    const msg = res.data && res.data.message ? res.data.message : 'Error al capturar el lead';
+                    addMessageToChat('bot', msg);
+                }
+            }
+        });
+    }
+
 
     // --- Inicialización ---
     if ($('#aicp-chatbot-container').length > 0) {
@@ -466,6 +489,8 @@ function renderSuggestedReplies() {
         $(document).on('click', '.aicp-suggested-reply', handleSuggestedReplyClick);
         $(document).on('click', '.aicp-feedback-btn', handleFeedbackClick);
         $(document).on('click', '.aicp-calendar-link', handleCalendarClick);
-        $(document).on('click', '.aicp-lead-button', handleLeadButtonClick);
+
+        $(document).on('click', '#aicp-capture-lead-btn', handleCaptureLeadClick);
+
     }
 });
