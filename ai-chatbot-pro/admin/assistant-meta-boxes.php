@@ -190,6 +190,9 @@ function aicp_render_leads_tab($assistant_id, $v) {
     }
     echo '</tbody></table>';
 
+    $webhook_url = $v['webhook_url'] ?? '';
+    echo '<p><label for="aicp_webhook_url">' . __('Webhook URL', 'ai-chatbot-pro') . '</label><br>';
+    echo '<input type="url" id="aicp_webhook_url" name="aicp_settings[webhook_url]" value="' . esc_attr($webhook_url) . '" class="regular-text"></p>';
 
 
     if (empty($leads)) {
