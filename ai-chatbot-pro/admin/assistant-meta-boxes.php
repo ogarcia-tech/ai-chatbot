@@ -175,11 +175,25 @@ function aicp_render_leads_tab($assistant_id, $v) {
         }
     }
 
-    echo '<table class="form-table">';
-    echo '<tr><th><label for="aicp_webhook_url">' . __('Webhook de Leads', 'ai-chatbot-pro') . '</label></th><td>';
-    echo '<input type="url" name="aicp_settings[webhook_url]" id="aicp_webhook_url" value="' . esc_attr($v['webhook_url'] ?? '') . '" class="regular-text">';
-    echo '</td></tr>';
-    echo '</table>';
+
+    $auto_collect = !empty($v['lead_auto_collect']);
+    $prompts = $v['lead_prompts'] ?? [];
+
+    echo '<h4>' . __('Ajustes de Captura de Leads', 'ai-chatbot-pro') . '</h4>';
+    echo '<p><label><input type="checkbox" name="aicp_settings[lead_auto_collect]" value="1" ' . checked($auto_collect, true, false) . '> ' . __('Solicitar datos de contacto automáticamente', 'ai-chatbot-pro') . '</label></p>';
+    echo '<table class="form-table"><tbody>';
+    $fields = [
+        'name'    => __('Mensaje para Nombre', 'ai-chatbot-pro'),
+        'email'   => __('Mensaje para Email', 'ai-chatbot-pro'),
+        'phone'   => __('Mensaje para Teléfono', 'ai-chatbot-pro'),
+        'website' => __('Mensaje para Web', 'ai-chatbot-pro')
+    ];
+    foreach ($fields as $key => $label) {
+        $value = esc_attr($prompts[$key] ?? '');
+        echo '<tr><th><label for="aicp_prompt_' . esc_attr($key) . '">' . esc_html($label) . '</label></th><td><input type="text" id="aicp_prompt_' . esc_attr($key) . '" name="aicp_settings[lead_prompts][' . esc_attr($key) . ']" value="' . $value . '" class="regular-text"></td></tr>';
+    }
+    echo '</tbody></table>';
+
 
 
     if (empty($leads)) {
@@ -290,7 +304,15 @@ function aicp_save_meta_box_data($post_id) {
     $current['color_bot_text'] = isset($s['color_bot_text']) ? sanitize_hex_color($s['color_bot_text']) : '#333333';
     $current['color_user_bg'] = isset($s['color_user_bg']) ? sanitize_hex_color($s['color_user_bg']) : '#dcf8c6';
     $current['color_user_text'] = isset($s['color_user_text']) ? sanitize_hex_color($s['color_user_text']) : '#000000';
-    
+
+    // Ajustes de captura de leads
+    $current['lead_auto_collect'] = !empty($s['lead_auto_collect']) ? 1 : 0;
+    if (isset($s['lead_prompts']) && is_array($s['lead_prompts'])) {
+        $current['lead_prompts'] = array_map('sanitize_text_field', $s['lead_prompts']);
+    } else {
+        $current['lead_prompts'] = [];
+    }
+
     // Nuevos campos
     
     // Los campos PRO se guardan vacíos en la versión gratuita

@@ -179,20 +179,16 @@ jQuery(function($) {
     }
 
     function askForMissingLeadData(missingFields) {
-        if (missingFields.length === 0) return;
-        
+        if (!params.lead_auto_collect || missingFields.length === 0) return;
+
         isCollectingLeadData = true;
         currentLeadField = missingFields[0];
-        
-        const fieldMessages = {
-            name: "Para poder ayudarte mejor, ¿podrías decirme tu nombre?",
-            email: "¿Podrías proporcionarme tu email para enviarte más información?",
-            phone: "¿Cuál es tu número de teléfono para contactarte?",
-            website: "¿Tienes algún sitio web que te gustaría que revisemos?"
-        };
-        
-        const message = fieldMessages[currentLeadField] || "¿Podrías proporcionar más información?";
-        
+
+        const messages = params.lead_prompt_messages || {};
+        const message = messages[currentLeadField];
+
+        if (!message) return;
+
         setTimeout(() => {
             addMessageToChat('bot', message);
         }, 1000);
