@@ -85,6 +85,11 @@
 .aicp-suggested-reply { background-color: #fff; border: 1px solid #ccc; border-radius: 20px; padding: 6px 12px; font-size: 0.85em; cursor: pointer; transition: background-color 0.2s; }
 .aicp-suggested-reply:hover { background-color: #e9e9e9; }
 
+/* Botones de cierre de lead */
+.aicp-lead-buttons { padding: 0 15px 10px; display: none; flex-wrap: wrap; gap: 8px; }
+.aicp-lead-button { background-color: #fff; border: 1px solid #ccc; border-radius: 20px; padding: 6px 12px; font-size: 0.85em; cursor: pointer; transition: background-color 0.2s; }
+.aicp-lead-button:hover { background-color: #e9e9e9; }
+
 /* Pie de página */
 .aicp-chat-footer { padding: 10px 15px; background: #fff; border-top: 1px solid #e0e0e0; flex-shrink: 0; }
 .aicp-chat-footer form { display: flex; align-items: center; gap: 10px; }
