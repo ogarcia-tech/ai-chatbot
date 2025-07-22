@@ -190,6 +190,7 @@ function aicp_render_leads_tab($assistant_id, $v) {
     }
     echo '</tbody></table>';
 
+
     $closing = $v['lead_closing_messages'] ?? [];
     echo '<h4>' . __('Mensajes de Cierre', 'ai-chatbot-pro') . '</h4>';
     echo '<table class="form-table"><tbody>';
@@ -199,6 +200,7 @@ function aicp_render_leads_tab($assistant_id, $v) {
         echo '<tr><th><label>' . esc_html($label) . '</label></th><td><input type="text" name="aicp_settings[lead_closing_messages][]" value="' . $val . '" class="regular-text"></td></tr>';
     }
     echo '</tbody></table>';
+
 
 
 
