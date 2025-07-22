@@ -107,13 +107,28 @@ class AICP_Ajax_Handler {
 
         if (isset($data['choices'][0]['message']['content'])) {
             $reply = $data['choices'][0]['message']['content'];
-            
+
             $full_history = $history;
             $full_history[] = ['role' => 'assistant', 'content' => $reply];
+
+            // Detectar posibles datos de contacto utilizando la lógica del servidor
+            $lead_info = AICP_Lead_Manager::detect_contact_data($full_history);
+            $lead_status = 'none';
+            $missing_fields = ['name', 'email', 'phone', 'website'];
+            if ($lead_info['has_lead']) {
+                $lead_status = $lead_info['is_complete'] ? 'complete' : 'partial';
+                $missing_fields = $lead_info['missing_fields'];
+            }
+
             $session_id = session_id() ?: uniqid('aicp_');
             $new_log_id = self::save_conversation($log_id, $assistant_id, $session_id, $full_history);
 
-            wp_send_json_success(['reply' => trim($reply), 'log_id' => $new_log_id]);
+            wp_send_json_success([
+                'reply'          => trim($reply),
+                'log_id'         => $new_log_id,
+                'lead_status'    => $lead_status,
+                'missing_fields' => $missing_fields,
+            ]);
         } else {
             wp_send_json_error(['message' => $data['error']['message'] ?? __('Respuesta inesperada.', 'ai-chatbot-pro')]);
         }

@@ -318,24 +318,25 @@ jQuery(function($) {
                     const botReply = response.data.reply;
                     logId = response.data.log_id;
                     conversationHistory.push({ role: 'assistant', content: botReply });
-                    
-                    // Verificar si la respuesta del bot sugiere contacto y no tenemos lead completo
-                    const contactKeywords = ['contacto', 'email', 'teléfono', 'llamar', 'escribir', 'información'];
-                    const suggestsContact = contactKeywords.some(keyword => 
-                        botReply.toLowerCase().includes(keyword)
-                    );
-                    
+
                     addMessageToChat('bot', botReply);
-                    
-                    // Si sugiere contacto y no tenemos lead completo, empezar recolección
-                    if (suggestsContact && !leadData.isComplete) {
-                        const missingFields = checkLeadCompleteness();
-                        if (missingFields !== true && missingFields.length > 0) {
-                            askForMissingLeadData(missingFields);
+
+                    const leadStatus = response.data.lead_status;
+                    const missing = response.data.missing_fields || [];
+
+                    if (leadStatus === 'partial') {
+                        if (typeof window.aicpLeadMissing === 'function') {
+                            window.aicpLeadMissing({
+                                logId: logId,
+                                assistantId: params.assistant_id,
+                                missingFields: missing
+                            });
+                        } else if (!leadData.isComplete && missing.length > 0) {
+                            askForMissingLeadData(missing);
                         }
                     }
-                } else { 
-                    addMessageToChat('bot', `Error: ${response.data.message}`); 
+                } else {
+                    addMessageToChat('bot', `Error: ${response.data.message}`);
                 }
             },
             error: () => addMessageToChat('bot', 'Lo siento, ha ocurrido un error de conexión.'),
