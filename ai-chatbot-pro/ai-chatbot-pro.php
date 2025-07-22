@@ -28,7 +28,7 @@ define('AICP_PLUGIN_FILE', __FILE__);
 define('AICP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AICP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('AICP_PLUGIN_BASENAME', plugin_basename(__FILE__));
-define('AICP_DB_VERSION', '1.6'); // Incrementado para nuevas funcionalidades
+define('AICP_DB_VERSION', '1.7'); // Incrementado para nuevas funcionalidades
 define('AICP_MIN_PHP_VERSION', '7.4');
 define('AICP_MIN_WP_VERSION', '5.0');
 

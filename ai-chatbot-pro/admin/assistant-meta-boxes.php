@@ -154,25 +154,21 @@ function aicp_render_preview_panel() {
 
 function aicp_render_leads_tab($assistant_id, $v) {
     global $wpdb;
-    $leads_table = $wpdb->prefix . 'aicp_leads';
-    $logs_table  = $wpdb->prefix . 'aicp_chat_logs';
+    $logs_table = $wpdb->prefix . 'aicp_chat_logs';
 
-    $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $leads_table));
-    if ($table_exists === $leads_table) {
-        $leads = $wpdb->get_results($wpdb->prepare("SELECT name, email, phone, website, created_at FROM $leads_table WHERE assistant_id = %d ORDER BY id DESC LIMIT 50", $assistant_id));
-    } else {
-        $rows = $wpdb->get_results($wpdb->prepare("SELECT lead_data, timestamp FROM $logs_table WHERE assistant_id = %d AND has_lead = 1 ORDER BY id DESC LIMIT 50", $assistant_id));
-        $leads = [];
-        foreach ($rows as $row) {
-            $data = json_decode($row->lead_data, true) ?: [];
-            $leads[] = (object) [
-                'name'      => $data['name'] ?? '',
-                'email'     => $data['email'] ?? '',
-                'phone'     => $data['phone'] ?? '',
-                'website'   => $data['website'] ?? '',
-                'created_at'=> $row->timestamp,
-            ];
-        }
+    $rows = $wpdb->get_results(
+        $wpdb->prepare("SELECT lead_data, timestamp FROM $logs_table WHERE assistant_id = %d AND has_lead = 1 ORDER BY id DESC LIMIT 50", $assistant_id)
+    );
+    $leads = [];
+    foreach ($rows as $row) {
+        $data = json_decode($row->lead_data, true) ?: [];
+        $leads[] = (object) [
+            'name'      => $data['name'] ?? '',
+            'email'     => $data['email'] ?? '',
+            'phone'     => $data['phone'] ?? '',
+            'website'   => $data['website'] ?? '',
+            'created_at'=> $row->timestamp,
+        ];
     }
 
 

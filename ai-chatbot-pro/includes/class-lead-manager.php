@@ -156,25 +156,6 @@ class AICP_Lead_Manager {
                 ['%d']
             );
 
-            $leads_table = $wpdb->prefix . 'aicp_leads';
-            $status      = $lead_status;
-
-            $wpdb->insert(
-                $leads_table,
-                [
-                    'log_id'       => $log_id,
-                    'assistant_id' => $assistant_id,
-                    'email'        => $lead_info['data']['email'] ?? '',
-                    'name'         => $lead_info['data']['name'] ?? '',
-                    'phone'        => $lead_info['data']['phone'] ?? '',
-                    'website'      => $lead_info['data']['website'] ?? '',
-                    'lead_data'    => wp_json_encode($lead_info['data'], JSON_UNESCAPED_UNICODE),
-                    'status'       => $status,
-                    'created_at'   => current_time('mysql'),
-                ],
-                ['%d','%d','%s','%s','%s','%s','%s','%s']
-            );
-
             // Hook para integraciones externas
             do_action('aicp_lead_detected', $lead_info['data'], $assistant_id, $log_id, $lead_status);
         }
