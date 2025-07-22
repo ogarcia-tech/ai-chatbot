@@ -65,30 +65,6 @@ class AICP_Installer {
         // Verificar y añadir campos que puedan faltar en instalaciones antiguas
         self::ensure_table_fields($table_name);
 
-        // Tabla para almacenar leads detectados
-        $leads_table = $wpdb->prefix . 'aicp_leads';
-        $sql_leads = "CREATE TABLE $leads_table (
-            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-            log_id bigint(20) unsigned NOT NULL,
-            assistant_id bigint(20) unsigned NOT NULL,
-            email varchar(255) DEFAULT '',
-            name varchar(255) DEFAULT '',
-            phone varchar(100) DEFAULT '',
-            website varchar(255) DEFAULT '',
-            lead_data longtext DEFAULT NULL,
-            status varchar(20) DEFAULT 'partial',
-            created_at datetime DEFAULT CURRENT_TIMESTAMP,
-            calendar_accessed_at datetime DEFAULT NULL,
-            PRIMARY KEY  (id),
-            KEY log_id (log_id),
-            KEY assistant_id (assistant_id),
-            KEY status (status)
-        ) $charset_collate;";
-
-        dbDelta($sql_leads);
-
-        // Asegurar campos para la tabla de leads
-        self::ensure_table_fields($leads_table);
     }
     
     /**
@@ -113,23 +89,6 @@ class AICP_Installer {
             $required_indexes = [
                 'has_lead' => "ADD INDEX has_lead (has_lead)",
                 'timestamp' => "ADD INDEX timestamp (timestamp)"
-            ];
-        } elseif (strpos($table_name, 'aicp_leads') !== false) {
-            $required_fields = [
-                'email' => "VARCHAR(255) DEFAULT ''",
-                'name' => "VARCHAR(255) DEFAULT ''",
-                'phone' => "VARCHAR(100) DEFAULT ''",
-                'website' => "VARCHAR(255) DEFAULT ''",
-                'lead_data' => 'LONGTEXT DEFAULT NULL',
-                'status' => "VARCHAR(20) DEFAULT 'partial'",
-                'created_at' => 'DATETIME DEFAULT CURRENT_TIMESTAMP',
-                'calendar_accessed_at' => 'DATETIME DEFAULT NULL'
-            ];
-
-            $required_indexes = [
-                'log_id' => 'ADD INDEX log_id (log_id)',
-                'assistant_id' => 'ADD INDEX assistant_id (assistant_id)',
-                'status' => 'ADD INDEX status (status)'
             ];
         } else {
             $required_fields = [];
@@ -197,6 +156,11 @@ class AICP_Installer {
         if (version_compare($old_version, '1.6', '<')) {
             // Migración a versión 1.6 - añadir campos de tracking
             self::migrate_to_1_6($table_name);
+        }
+
+        if (version_compare($old_version, '1.7', '<')) {
+            // Migrar datos de la tabla antigua de leads
+            self::migrate_leads_table($table_name);
         }
         
         // Asegurar que todos los campos están presentes
@@ -278,6 +242,67 @@ class AICP_Installer {
                 }
             }
         }
+    }
+
+    /**
+     * Migrar registros desde la tabla wp_aicp_leads al nuevo esquema
+     */
+    private static function migrate_leads_table($table_name) {
+        global $wpdb;
+
+        $leads_table = $wpdb->prefix . 'aicp_leads';
+        $exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $leads_table));
+        if ($exists !== $leads_table) {
+            return;
+        }
+
+        $leads = $wpdb->get_results("SELECT * FROM $leads_table");
+        foreach ($leads as $lead) {
+            $lead_data = [];
+            if ($lead->lead_data) {
+                $decoded = json_decode($lead->lead_data, true);
+                if (is_array($decoded)) {
+                    $lead_data = $decoded;
+                }
+            }
+
+            foreach (['name', 'email', 'phone', 'website'] as $field) {
+                if (!empty($lead->$field) && !isset($lead_data[$field])) {
+                    $lead_data[$field] = $lead->$field;
+                }
+            }
+
+            $lead_status = $lead->status ?: 'partial';
+
+            if ($lead->log_id > 0) {
+                $wpdb->update(
+                    $table_name,
+                    [
+                        'has_lead'   => 1,
+                        'lead_data'  => wp_json_encode($lead_data, JSON_UNESCAPED_UNICODE),
+                        'lead_status'=> $lead_status,
+                    ],
+                    ['id' => $lead->log_id],
+                    ['%d','%s','%s'],
+                    ['%d']
+                );
+            } else {
+                $wpdb->insert(
+                    $table_name,
+                    [
+                        'assistant_id' => $lead->assistant_id,
+                        'session_id'   => 'legacy-lead-' . $lead->id,
+                        'timestamp'    => $lead->created_at,
+                        'has_lead'     => 1,
+                        'lead_data'    => wp_json_encode($lead_data, JSON_UNESCAPED_UNICODE),
+                        'lead_status'  => $lead_status,
+                    ],
+                    ['%d','%s','%s','%d','%s','%s']
+                );
+            }
+        }
+
+        $wpdb->query("DROP TABLE IF EXISTS $leads_table");
     }
     
     /**
