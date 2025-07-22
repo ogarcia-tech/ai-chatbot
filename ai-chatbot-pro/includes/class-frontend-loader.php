@@ -15,10 +15,12 @@ class AICP_Frontend_Loader {
     public static function init() {
         add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_assets']);
         add_action('wp_footer', [__CLASS__, 'add_chatbot_container']);
-        
+
         // AJAX handlers para funcionalidades de lead
         add_action('wp_ajax_aicp_save_lead', [__CLASS__, 'handle_save_lead']);
         add_action('wp_ajax_nopriv_aicp_save_lead', [__CLASS__, 'handle_save_lead']);
+        add_action('wp_ajax_aicp_capture_lead', [__CLASS__, 'handle_capture_lead']);
+        add_action('wp_ajax_nopriv_aicp_capture_lead', [__CLASS__, 'handle_capture_lead']);
     }
 
     private static function get_active_assistant() {
@@ -174,4 +176,51 @@ class AICP_Frontend_Loader {
         }
     }
 
+
+    /**
+     * Captura el lead analizando la conversación completa enviada por el usuario.
+     */
+    public static function handle_capture_lead() {
+        if (!wp_verify_nonce($_POST['nonce'], 'aicp_chat_nonce')) {
+            wp_die('Nonce verification failed');
+        }
+
+        $assistant_id = intval($_POST['assistant_id'] ?? 0);
+        $log_id       = intval($_POST['log_id'] ?? 0);
+        $conversation = isset($_POST['conversation']) && is_array($_POST['conversation']) ? $_POST['conversation'] : [];
+
+        if (!$assistant_id || !$log_id || empty($conversation)) {
+            wp_send_json_error(['message' => __('Datos incompletos.', 'ai-chatbot-pro')]);
+        }
+
+        $lead_info = AICP_Lead_Manager::detect_contact_data($conversation);
+
+        if (!$lead_info['has_lead']) {
+            wp_send_json_error(['message' => __('No se detectó información de contacto.', 'ai-chatbot-pro')]);
+        }
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'aicp_chat_logs';
+
+        $lead_status = $lead_info['is_complete'] ? 'complete' : 'partial';
+
+        $updated = $wpdb->update(
+            $table,
+            [
+                'has_lead'   => 1,
+                'lead_data'  => wp_json_encode($lead_info['data'], JSON_UNESCAPED_UNICODE),
+                'lead_status'=> $lead_status
+            ],
+            ['id' => $log_id],
+            ['%d','%s','%s'],
+            ['%d']
+        );
+
+        if ($updated !== false) {
+            do_action('aicp_lead_detected', $lead_info['data'], $assistant_id, $log_id, $lead_status);
+            wp_send_json_success(['lead' => $lead_info['data']]);
+        } else {
+            wp_send_json_error(['message' => __('Error al guardar el lead.', 'ai-chatbot-pro')]);
+        }
+    }
 }
