@@ -175,6 +175,12 @@ function aicp_render_leads_tab($assistant_id, $v) {
         }
     }
 
+    echo '<table class="form-table">';
+    echo '<tr><th><label for="aicp_webhook_url">' . __('Webhook de Leads', 'ai-chatbot-pro') . '</label></th><td>';
+    echo '<input type="url" name="aicp_settings[webhook_url]" id="aicp_webhook_url" value="' . esc_attr($v['webhook_url'] ?? '') . '" class="regular-text">';
+    echo '</td></tr>';
+    echo '</table>';
+
 
     if (empty($leads)) {
         echo '<p>' . __('Aún no se han detectado leads.', 'ai-chatbot-pro') . '</p>';
@@ -289,7 +295,7 @@ function aicp_save_meta_box_data($post_id) {
     
     // Los campos PRO se guardan vacíos en la versión gratuita
     $current['training_post_types'] = [];
-    $current['webhook_url'] = '';
+    $current['webhook_url'] = isset($s['webhook_url']) ? esc_url_raw($s['webhook_url']) : '';
     
     update_post_meta($post_id, '_aicp_assistant_settings', $current);
 }
