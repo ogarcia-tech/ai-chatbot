@@ -27,6 +27,21 @@ AI Chatbot Pro te permite crear asistentes de chat personalizables usando la API
 = ¿Necesito una clave de API de OpenAI? =
 Sí, debes introducir tu clave de API de OpenAI para que el chatbot pueda comunicarse con la plataforma.
 
+== JavaScript hooks ==
+Se expone la función global `aicpLeadMissing` para que los temas o plugins puedan reaccionar cuando el bot detecta un lead incompleto.
+
+Ejemplo básico:
+
+```
+<script>
+window.aicpLeadMissing = function(info) {
+    // info.missingFields contiene los campos faltantes
+    // Aquí podrías mostrar tu propio formulario
+    console.log('Faltan datos:', info.missingFields);
+};
+</script>
+```
+
 == Changelog ==
 = 5.1.0 =
 * Versión inicial del plugin.
