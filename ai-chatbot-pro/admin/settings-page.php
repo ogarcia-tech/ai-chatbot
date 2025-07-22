@@ -29,7 +29,6 @@ function aicp_register_general_settings() {
     register_setting('aicp_settings_group', 'aicp_settings', 'aicp_general_settings_sanitize');
     add_settings_section('aicp_api_key_section', __('Ajustes de la API de OpenAI', 'ai-chatbot-pro'), null, 'aicp-settings');
     add_settings_field('aicp_api_key', __('API Key', 'ai-chatbot-pro'), 'aicp_api_key_field_render', 'aicp-settings', 'aicp_api_key_section');
-    add_settings_field('aicp_lead_webhook_url', __('Webhook de Leads', 'ai-chatbot-pro'), 'aicp_lead_webhook_url_field_render', 'aicp-settings', 'aicp_api_key_section');
 }
 add_action('admin_init', 'aicp_register_general_settings');
 
@@ -44,6 +43,8 @@ function aicp_api_key_field_render() {
 
 /**
  * Renderiza el campo de webhook de leads.
+ *
+ * @deprecated Este ajuste se gestiona ahora por asistente.
  */
 function aicp_lead_webhook_url_field_render() {
     $options = get_option('aicp_settings');

@@ -18,13 +18,15 @@ class Lead_Manager_Test extends WP_UnitTestCase {
         $this->assertEmpty( $result['missing_fields'] );
     }
 
-    public function test_send_lead_to_webhook() {
+    public function test_send_lead_to_webhook_global_fallback() {
         update_option( 'aicp_settings', [ 'lead_webhook_url' => 'https://example.com' ] );
 
-        $lead_data    = [ 'email' => 'test@example.com' ];
-        $assistant_id = 5;
-        $log_id       = 10;
-        $status       = 'complete';
+        $assistant_id = $this->factory->post->create( [ 'post_type' => 'aicp_assistant' ] );
+        update_post_meta( $assistant_id, '_aicp_assistant_settings', [] );
+
+        $lead_data = [ 'email' => 'test@example.com' ];
+        $log_id    = 10;
+        $status    = 'complete';
 
         $captured = [];
         add_filter( 'pre_http_request', function ( $pre, $args, $url ) use ( &$captured ) {
@@ -43,5 +45,29 @@ class Lead_Manager_Test extends WP_UnitTestCase {
         $this->assertSame( $assistant_id, $payload['assistant_id'] );
         $this->assertSame( $log_id, $payload['log_id'] );
         $this->assertSame( $status, $payload['lead_status'] );
+    }
+
+    public function test_send_lead_to_webhook_assistant_override() {
+        update_option( 'aicp_settings', [ 'lead_webhook_url' => 'https://global.com' ] );
+
+        $assistant_id = $this->factory->post->create( [ 'post_type' => 'aicp_assistant' ] );
+        update_post_meta( $assistant_id, '_aicp_assistant_settings', [ 'webhook_url' => 'https://assistant.com' ] );
+
+        $lead_data = [ 'email' => 'test@example.com' ];
+        $log_id    = 20;
+        $status    = 'complete';
+
+        $captured = [];
+        add_filter( 'pre_http_request', function ( $pre, $args, $url ) use ( &$captured ) {
+            $captured['url']  = $url;
+            $captured['body'] = $args['body'];
+            return [ 'body' => '', 'headers' => [], 'response' => [ 'code' => 200 ] ];
+        }, 10, 3 );
+
+        AICP_Lead_Manager::send_lead_to_webhook( $lead_data, $assistant_id, $log_id, $status );
+
+        remove_all_filters( 'pre_http_request' );
+
+        $this->assertSame( 'https://assistant.com', $captured['url'] );
     }
 }
