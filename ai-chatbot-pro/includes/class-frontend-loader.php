@@ -97,6 +97,7 @@ class AICP_Frontend_Loader {
         // Obtener configuración de detección de leads
         $lead_auto_collect  = !empty($s['lead_auto_collect']) ? true : false;
         $lead_prompt_messages = $s['lead_prompts'] ?? [];
+        $lead_closing_messages = $s['lead_closing_messages'] ?? [];
 
         wp_localize_script('aicp-chatbot-script', 'aicp_chatbot_params', [
             'ajax_url' => admin_url('admin-ajax.php'),
@@ -112,6 +113,7 @@ class AICP_Frontend_Loader {
             'suggested_messages' => $suggested_messages,
             'lead_auto_collect'  => $lead_auto_collect,
             'lead_prompt_messages' => $lead_prompt_messages,
+            'lead_capture_buttons' => $lead_closing_messages,
         ]);
     }
 
