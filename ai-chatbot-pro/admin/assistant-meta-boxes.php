@@ -22,7 +22,6 @@ function aicp_add_meta_boxes() {
 
     add_meta_box('aicp_main_settings_meta_box', __('Configuración del Asistente', 'ai-chatbot-pro'), 'aicp_render_main_meta_box', 'aicp_assistant', 'normal', 'high');
     add_meta_box('aicp_shortcode_meta_box', __('Shortcode', 'ai-chatbot-pro'), 'aicp_render_shortcode_meta_box', 'aicp_assistant', 'side', 'high');
-    add_meta_box('aicp_chat_history_meta_box', __('Historial de Conversaciones', 'ai-chatbot-pro'), 'aicp_render_chat_history_meta_box', 'aicp_assistant', 'normal', 'low');
 }
 add_action('add_meta_boxes_aicp_assistant', 'aicp_add_meta_boxes');
 
@@ -231,42 +230,17 @@ function aicp_render_leads_tab($assistant_id, $v) {
         echo '</tr>';
     }
     echo '</tbody></table>';
-}
-
-function aicp_render_pro_tab() {
-    ?>
-    <div class="aicp-pro-feature-wrapper">
-        <h3><?php _e('Desbloquea todo el Potencial con la Versión PRO', 'ai-chatbot-pro'); ?></h3>
-        <p><?php _e('La versión PRO transforma tu chatbot en una herramienta de negocio de élite con funcionalidades exclusivas:', 'ai-chatbot-pro'); ?></p>
-        <ul>
-            <li><strong><?php _e('Entrenamiento Avanzado:', 'ai-chatbot-pro'); ?></strong> <?php _e('Permite que tu bot aprenda de todo tu contenido (PDFs, URLs, etc.) para dar respuestas increíblemente precisas.', 'ai-chatbot-pro'); ?></li>
-            <li><strong><?php _e('Integraciones con Webhooks:', 'ai-chatbot-pro'); ?></strong> <?php _e('Conecta los leads capturados directamente a tu CRM o herramientas de marketing.', 'ai-chatbot-pro'); ?></li>
-            <li><strong><?php _e('Analíticas Detalladas:', 'ai-chatbot-pro'); ?></strong> <?php _e('Accede a gráficas y métricas avanzadas para entender el rendimiento de tus asistentes.', 'ai-chatbot-pro'); ?></li>
-        </ul>
-        <a href="https://metricaweb.es" target="_blank" class="button button-primary"><?php _e('Conseguir AI Chatbot Pro', 'ai-chatbot-pro'); ?></a>
-    </div>
-    <?php
-}
-
-function aicp_render_uploader($id, $value) { ?><div class="aicp-uploader-wrapper"><img src="<?php echo esc_url($value); ?>" id="<?php echo esc_attr($id); ?>_preview" class="aicp-preview-image"><input type="hidden" name="aicp_settings[<?php echo esc_attr($id); ?>_url]" id="<?php echo esc_attr($id); ?>_url" value="<?php echo esc_url($value); ?>"><button type="button" class="button button-secondary aicp-upload-button" data-target-id="<?php echo esc_attr($id); ?>"><?php _e('Elegir Imagen', 'ai-chatbot-pro'); ?></button><button type="button" class="button button-link aicp-remove-button" data-target-id="<?php echo esc_attr($id); ?>"><?php _e('Quitar', 'ai-chatbot-pro'); ?></button></div><?php }
-
-function aicp_render_shortcode_meta_box($post) { ?><p><?php _e('Usa este shortcode para mostrar el asistente.', 'ai-chatbot-pro'); ?></p><input type="text" readonly value="[ai_chatbot_pro id=&quot;<?php echo $post->ID; ?>&quot;]" class="widefat" onfocus="this.select();"><?php }
-
-function aicp_render_chat_history_meta_box($post) {
-    global $wpdb;
+    // Historial de Conversaciones
     $table_name = $wpdb->prefix . 'aicp_chat_logs';
-    $logs = $wpdb->get_results($wpdb->prepare("SELECT id, timestamp, has_lead, first_user_message FROM $table_name WHERE assistant_id = %d ORDER BY id DESC LIMIT 20", $post->ID));
+    $logs = $wpdb->get_results($wpdb->prepare("SELECT id, timestamp, has_lead, first_user_message FROM $table_name WHERE assistant_id = %d ORDER BY id DESC LIMIT 20", $assistant_id));
 
-    $settings = get_post_meta($post->ID, '_aicp_assistant_settings', true);
-    $hide_icons = $settings['hide_lead_icons'] ?? 0;
-    
-    $leads_count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_name WHERE assistant_id = %d AND has_lead = 1", $post->ID));
-    $history_count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_name WHERE assistant_id = %d", $post->ID));
+    $leads_count   = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_name WHERE assistant_id = %d AND has_lead = 1", $assistant_id));
+    $history_count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_name WHERE assistant_id = %d", $assistant_id));
 
-    $export_leads_url = $leads_count > 0 ? wp_nonce_url(admin_url('edit.php?post_type=aicp_assistant&aicp_export=leads&assistant_id=' . $post->ID), 'aicp_export_nonce_' . $post->ID) : '#';
-    $export_history_url = $history_count > 0 ? wp_nonce_url(admin_url('edit.php?post_type=aicp_assistant&aicp_export=history&assistant_id=' . $post->ID), 'aicp_export_nonce_' . $post->ID) : '#';
-    
+    $export_leads_url   = $leads_count > 0 ? wp_nonce_url(admin_url('edit.php?post_type=aicp_assistant&aicp_export=leads&assistant_id=' . $assistant_id), 'aicp_export_nonce_' . $assistant_id) : '#';
+    $export_history_url = $history_count > 0 ? wp_nonce_url(admin_url('edit.php?post_type=aicp_assistant&aicp_export=history&assistant_id=' . $assistant_id), 'aicp_export_nonce_' . $assistant_id) : '#';
     ?>
+    <h4><?php _e('Historial de Conversaciones', 'ai-chatbot-pro'); ?></h4>
     <div class="aicp-history-actions">
         <a href="<?php echo esc_url($export_leads_url); ?>" class="button" <?php if ($leads_count == 0) echo 'disabled title="' . esc_attr__('No hay leads para exportar', 'ai-chatbot-pro') . '"'; ?>>
             <?php _e('Exportar Leads (CSV)', 'ai-chatbot-pro'); ?>
@@ -276,7 +250,6 @@ function aicp_render_chat_history_meta_box($post) {
         </a>
     </div>
     <?php
-    
     echo '<div id="aicp-chat-history-container">';
     if (empty($logs)) {
         echo '<p>' . __('No hay conversaciones registradas.', 'ai-chatbot-pro') . '</p>';
@@ -298,6 +271,25 @@ function aicp_render_chat_history_meta_box($post) {
     echo '</div>';
     echo '<div id="aicp-log-modal-backdrop" style="display:none;"><div id="aicp-log-modal-content"><div id="aicp-log-modal-close">&times;</div><div id="aicp-log-modal-body"></div></div></div>';
 }
+
+function aicp_render_pro_tab() {
+    ?>
+    <div class="aicp-pro-feature-wrapper">
+        <h3><?php _e('Desbloquea todo el Potencial con la Versión PRO', 'ai-chatbot-pro'); ?></h3>
+        <p><?php _e('La versión PRO transforma tu chatbot en una herramienta de negocio de élite con funcionalidades exclusivas:', 'ai-chatbot-pro'); ?></p>
+        <ul>
+            <li><strong><?php _e('Entrenamiento Avanzado:', 'ai-chatbot-pro'); ?></strong> <?php _e('Permite que tu bot aprenda de todo tu contenido (PDFs, URLs, etc.) para dar respuestas increíblemente precisas.', 'ai-chatbot-pro'); ?></li>
+            <li><strong><?php _e('Integraciones con Webhooks:', 'ai-chatbot-pro'); ?></strong> <?php _e('Conecta los leads capturados directamente a tu CRM o herramientas de marketing.', 'ai-chatbot-pro'); ?></li>
+            <li><strong><?php _e('Analíticas Detalladas:', 'ai-chatbot-pro'); ?></strong> <?php _e('Accede a gráficas y métricas avanzadas para entender el rendimiento de tus asistentes.', 'ai-chatbot-pro'); ?></li>
+        </ul>
+        <a href="https://metricaweb.es" target="_blank" class="button button-primary"><?php _e('Conseguir AI Chatbot Pro', 'ai-chatbot-pro'); ?></a>
+    </div>
+    <?php
+}
+
+function aicp_render_uploader($id, $value) { ?><div class="aicp-uploader-wrapper"><img src="<?php echo esc_url($value); ?>" id="<?php echo esc_attr($id); ?>_preview" class="aicp-preview-image"><input type="hidden" name="aicp_settings[<?php echo esc_attr($id); ?>_url]" id="<?php echo esc_attr($id); ?>_url" value="<?php echo esc_url($value); ?>"><button type="button" class="button button-secondary aicp-upload-button" data-target-id="<?php echo esc_attr($id); ?>"><?php _e('Elegir Imagen', 'ai-chatbot-pro'); ?></button><button type="button" class="button button-link aicp-remove-button" data-target-id="<?php echo esc_attr($id); ?>"><?php _e('Quitar', 'ai-chatbot-pro'); ?></button></div><?php }
+
+function aicp_render_shortcode_meta_box($post) { ?><p><?php _e('Usa este shortcode para mostrar el asistente.', 'ai-chatbot-pro'); ?></p><input type="text" readonly value="[ai_chatbot_pro id=&quot;<?php echo $post->ID; ?>&quot;]" class="widefat" onfocus="this.select();"><?php }
 
 function aicp_save_meta_box_data($post_id) {
     if (!isset($_POST['aicp_meta_box_nonce']) || !wp_verify_nonce($_POST['aicp_meta_box_nonce'], 'aicp_save_meta_box_data')) return;
