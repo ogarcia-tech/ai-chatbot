@@ -108,20 +108,6 @@ function aicp_render_instructions_tab($v) {
         <tr><th><label for="aicp_length_tone"><?php _e('Longitud y Tono', 'ai-chatbot-pro'); ?></label></th><td><textarea name="aicp_settings[length_tone]" id="aicp_length_tone" rows="3" class="large-text"><?php echo esc_textarea($v['length_tone'] ?? 'Intenta ser lo más concisa posible, manteniendo un tono amable y profesional.'); ?></textarea></td></tr>
         <tr><th><label for="aicp_example"><?php _e('Ejemplo de Respuesta', 'ai-chatbot-pro'); ?></label></th><td><textarea name="aicp_settings[example]" id="aicp_example" rows="5" class="large-text"><?php echo esc_textarea($v['example'] ?? 'Si el cliente pregunta por el precio de una web, responde: "El precio de una web puede variar mucho, pero para darte una idea, nuestros proyectos suelen empezar en 1.500€. ¿Te gustaría que te preparásemos un presupuesto detallado sin compromiso?"'); ?></textarea></td></tr>
         <tr><th><label><?php _e('Mensajes Sugeridos', 'ai-chatbot-pro'); ?></label></th><td><input type="text" name="aicp_settings[suggested_messages][]" value="<?php echo esc_attr($v['suggested_messages'][0] ?? ''); ?>" class="large-text" placeholder="<?php _e('Ej: Me interesa el servicio de SEO', 'ai-chatbot-pro'); ?>"><br><input type="text" name="aicp_settings[suggested_messages][]" value="<?php echo esc_attr($v['suggested_messages'][1] ?? ''); ?>" class="large-text" placeholder="<?php _e('Ej: Quiero una web económica', 'ai-chatbot-pro'); ?>"><br><input type="text" name="aicp_settings[suggested_messages][]" value="<?php echo esc_attr($v['suggested_messages'][2] ?? ''); ?>" class="large-text" placeholder="<?php _e('Ej: ¿Podéis llamarme?', 'ai-chatbot-pro'); ?>"><p class="description"><?php _e('Estos mensajes aparecerán como botones clicables para el usuario.', 'ai-chatbot-pro'); ?></p></td></tr>
-        <tr>
-            <th><label for="aicp_calendar_url"><?php _e('URL del Calendario para Reservar Cita', 'ai-chatbot-pro'); ?></label></th>
-            <td>
-                <input type="url" name="aicp_settings[calendar_url]" id="aicp_calendar_url" class="regular-text" value="<?php echo esc_attr($v['calendar_url'] ?? ''); ?>">
-                <p class="description"><?php _e('Si lo rellenas, el bot podrá sugerir este enlace para reservar cita cuando detecte intención de agendar.', 'ai-chatbot-pro'); ?></p>
-            </td>
-        </tr>
-        <tr>
-            <th><label for="aicp_lead_detection"><?php _e('Detección de Leads Mejorada', 'ai-chatbot-pro'); ?></label></th>
-            <td>
-                <label><input type="checkbox" name="aicp_settings[enhanced_lead_detection]" value="1" <?php checked($v['enhanced_lead_detection'] ?? 0, 1); ?>> <?php _e('Activar detección avanzada de leads (nombre, email, teléfono y web)', 'ai-chatbot-pro'); ?></label>
-                <p class="description"><?php _e('El bot pedirá automáticamente estos datos si no los detecta en la conversación.', 'ai-chatbot-pro'); ?></p>
-            </td>
-        </tr>
     </table>
     <?php
 }
@@ -189,29 +175,7 @@ function aicp_render_leads_tab($assistant_id, $v) {
         }
     }
 
-    $hide_icons = $v['hide_lead_icons'] ?? 0;
-    $lead_questions = $v['lead_form_questions'] ?? [];
-    ?>
-    <p>
-        <label>
-            <input type="checkbox" name="aicp_settings[hide_lead_icons]" value="1" <?php checked($hide_icons, 1); ?>>
-            <?php _e('Ocultar iconos de lead en el historial para leads listados aquí', 'ai-chatbot-pro'); ?>
-        </label>
-    </p>
-    <h4><?php _e('Preguntas del Formulario de Leads', 'ai-chatbot-pro'); ?></h4>
-    <div id="aicp-lead-questions">
-        <?php
-        if (!empty($lead_questions) && is_array($lead_questions)) {
-            foreach ($lead_questions as $question) {
-                echo '<div class="aicp-lead-question"><input type="text" name="aicp_settings[lead_form_questions][]" value="' . esc_attr($question) . '" class="regular-text"> <button type="button" class="button aicp-remove-question">&times;</button></div>';
-            }
-        } else {
-            echo '<div class="aicp-lead-question"><input type="text" name="aicp_settings[lead_form_questions][]" value="" class="regular-text"> <button type="button" class="button aicp-remove-question">&times;</button></div>';
-        }
-        ?>
-    </div>
-    <p><button type="button" class="button" id="aicp-add-question"><?php _e('Añadir pregunta', 'ai-chatbot-pro'); ?></button></p>
-    <?php
+
     if (empty($leads)) {
         echo '<p>' . __('Aún no se han detectado leads.', 'ai-chatbot-pro') . '</p>';
         return;
@@ -322,14 +286,6 @@ function aicp_save_meta_box_data($post_id) {
     $current['color_user_text'] = isset($s['color_user_text']) ? sanitize_hex_color($s['color_user_text']) : '#000000';
     
     // Nuevos campos
-    $current['calendar_url'] = isset($s['calendar_url']) ? esc_url_raw($s['calendar_url']) : '';
-    $current['enhanced_lead_detection'] = isset($s['enhanced_lead_detection']) ? 1 : 0;
-    $current['hide_lead_icons'] = isset($s['hide_lead_icons']) ? 1 : 0;
-    if (isset($s['lead_form_questions']) && is_array($s['lead_form_questions'])) {
-        $current['lead_form_questions'] = array_filter(array_map('sanitize_text_field', $s['lead_form_questions']));
-    } else {
-        $current['lead_form_questions'] = [];
-    }
     
     // Los campos PRO se guardan vacíos en la versión gratuita
     $current['training_post_types'] = [];

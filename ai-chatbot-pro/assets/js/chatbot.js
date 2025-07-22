@@ -54,8 +54,6 @@ jQuery(function($) {
             <span class="aicp-open-icon"><img src="${params.open_icon}" alt="Abrir chat"></span>
             <span class="aicp-close-icon">${closeIcon}</span>
         </button>
-        <button id="aicp-lead-form-btn" class="aicp-lead-form-btn">Solicitar Información</button>
-        <div id="aicp-lead-form-overlay"><form id="aicp-lead-form"><h3>Solicitud de Información</h3><div class="aicp-lead-fields"></div><p><button type="submit" class="button">Enviar</button> <button type="button" id="aicp-lead-cancel" class="button">Cancelar</button></p></form></div>
         `;
         $('#aicp-chatbot-container').addClass(`position-${params.position}`).html(chatbotHTML);
         renderSuggestedReplies();
@@ -417,60 +415,14 @@ jQuery(function($) {
         });
     }
 
-    function buildLeadFields() {
-        const $fields = $('#aicp-lead-form .aicp-lead-fields');
-        if (!$fields.length) return;
-        $fields.empty();
-        if (Array.isArray(params.lead_questions) && params.lead_questions.length > 0) {
-            params.lead_questions.forEach((q, i) => {
-                const field = `<div class="aicp-lead-field"><label>${q}</label><input type="text" name="lead_${i}" required></div>`;
-                $fields.append(field);
-            });
-        }
-    }
-
-    function showLeadForm() {
-        buildLeadFields();
-        $('#aicp-lead-form-overlay').fadeIn(200);
-    }
-
-    function hideLeadForm() {
-        $('#aicp-lead-form-overlay').fadeOut(200);
-    }
-
-    function submitLeadForm(e) {
-        e.preventDefault();
-        const answers = {};
-        $('#aicp-lead-form').find('input').each(function(idx){
-            const key = params.lead_questions[idx] || `q${idx}`;
-            answers[key] = $(this).val();
-        });
-        $.post(params.ajax_url, {
-            action: 'aicp_submit_lead_form',
-            nonce: params.nonce,
-            assistant_id: params.assistant_id,
-            answers: answers
-        }, function(response){
-            if(response.success){
-                alert('¡Gracias! Hemos recibido tu solicitud.');
-                hideLeadForm();
-            } else {
-                alert('Error al enviar el formulario');
-            }
-        });
-    }
 
     // --- Inicialización ---
     if ($('#aicp-chatbot-container').length > 0) {
         buildChatHTML();
         $(document).on('click', '#aicp-chat-toggle-button', toggleChatWindow);
-        $(document).on('click', '#aicp-lead-form-btn', showLeadForm);
-        $(document).on('click', '#aicp-lead-cancel', hideLeadForm);
-        $(document).on('submit', '#aicp-lead-form', submitLeadForm);
         $(document).on('submit', '#aicp-chat-form', handleFormSubmit);
         $(document).on('click', '.aicp-suggested-reply', handleSuggestedReplyClick);
         $(document).on('click', '.aicp-feedback-btn', handleFeedbackClick);
         $(document).on('click', '.aicp-calendar-link', handleCalendarClick);
-        buildLeadFields();
     }
 });

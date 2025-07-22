@@ -94,13 +94,8 @@ class AICP_Frontend_Loader {
             $suggested_messages = array_filter(array_map('trim', explode("\n", $s['suggested_messages'])));
         }
 
-        // Obtener URL del calendario si está configurada
-        $calendar_url = !empty($s['calendar_url']) ? esc_url($s['calendar_url']) : '';
-
         // Obtener configuración de detección de leads
-        $enhanced_lead_detection = !empty($s['enhanced_lead_detection']) ? true : false;
         $lead_auto_collect = !empty($s['lead_auto_collect']) ? true : false;
-        $lead_questions = !empty($s['lead_form_questions']) && is_array($s['lead_form_questions']) ? array_values($s['lead_form_questions']) : [];
 
         wp_localize_script('aicp-chatbot-script', 'aicp_chatbot_params', [
             'ajax_url' => admin_url('admin-ajax.php'),
@@ -114,10 +109,7 @@ class AICP_Frontend_Loader {
             'position' => $s['position'] ?? 'br',
             'open_icon' => !empty($s['open_icon_url']) ? esc_url($s['open_icon_url']) : $default_bot_avatar,
             'suggested_messages' => $suggested_messages,
-            'calendar_url' => $calendar_url,
-            'enhanced_lead_detection' => $enhanced_lead_detection,
             'lead_auto_collect' => $lead_auto_collect,
-            'lead_questions' => $lead_questions,
         ]);
     }
 
