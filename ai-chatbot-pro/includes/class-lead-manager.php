@@ -184,8 +184,13 @@ class AICP_Lead_Manager {
      * Enviar los datos del lead a la URL configurada.
      */
     public static function send_lead_to_webhook($lead_data, $assistant_id, $log_id, $lead_status) {
-        $options = get_option('aicp_settings');
-        $url = isset($options['lead_webhook_url']) ? esc_url_raw($options['lead_webhook_url']) : '';
+        $settings = get_post_meta($assistant_id, '_aicp_assistant_settings', true);
+        $url = isset($settings['webhook_url']) ? esc_url_raw($settings['webhook_url']) : '';
+
+        if (!$url) {
+            $options = get_option('aicp_settings');
+            $url = isset($options['lead_webhook_url']) ? esc_url_raw($options['lead_webhook_url']) : '';
+        }
 
         if (!$url) {
             return;

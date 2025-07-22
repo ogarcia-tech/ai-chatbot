@@ -175,6 +175,7 @@ function aicp_render_leads_tab($assistant_id, $v) {
         }
     }
 
+
     $auto_collect = !empty($v['lead_auto_collect']);
     $prompts = $v['lead_prompts'] ?? [];
 
@@ -192,6 +193,7 @@ function aicp_render_leads_tab($assistant_id, $v) {
         echo '<tr><th><label for="aicp_prompt_' . esc_attr($key) . '">' . esc_html($label) . '</label></th><td><input type="text" id="aicp_prompt_' . esc_attr($key) . '" name="aicp_settings[lead_prompts][' . esc_attr($key) . ']" value="' . $value . '" class="regular-text"></td></tr>';
     }
     echo '</tbody></table>';
+
 
 
     if (empty($leads)) {
@@ -315,7 +317,7 @@ function aicp_save_meta_box_data($post_id) {
     
     // Los campos PRO se guardan vacíos en la versión gratuita
     $current['training_post_types'] = [];
-    $current['webhook_url'] = '';
+    $current['webhook_url'] = isset($s['webhook_url']) ? esc_url_raw($s['webhook_url']) : '';
     
     update_post_meta($post_id, '_aicp_assistant_settings', $current);
 }
