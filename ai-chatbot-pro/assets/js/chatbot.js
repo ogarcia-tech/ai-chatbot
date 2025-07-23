@@ -6,6 +6,15 @@ jQuery(function($) {
     const params = window.aicp_chatbot_params;
     if (!params) return;
 
+    if (Array.isArray(params.lead_capture_buttons)) {
+        params.lead_capture_buttons = params.lead_capture_buttons.map(btn => {
+            if (typeof btn === 'string') {
+                return { text: btn, url: '' };
+            }
+            return btn;
+        });
+    }
+
     let conversationHistory = [];
     let logId = 0;
     let isChatOpen = false;
@@ -86,10 +95,17 @@ function renderSuggestedReplies() {
             $container.hide();
             return;
         }
+
         $container.empty();
-        params.lead_capture_buttons.forEach(msg => {
-            if (msg) {
-                const $btn = $('<button class="aicp-lead-button"></button>').text(msg);
+        params.lead_capture_buttons.forEach(btn => {
+            if (!btn) return;
+            const text = typeof btn === 'string' ? btn : btn.text;
+            const url  = (typeof btn === 'object' && btn.url) ? btn.url : '';
+            if (text) {
+                const $btn = $('<button class="aicp-lead-button"></button>')
+                    .text(text)
+                    .attr('data-text', text)
+                    .attr('data-url', url);
                 $container.append($btn);
             }
         });
@@ -398,10 +414,18 @@ function renderSuggestedReplies() {
     }
 
     function handleLeadButtonClick() {
-        const message = $(this).text();
+        const $btn = $(this);
+        const message = $btn.data('text') || $btn.text();
+        const url = $btn.data('url');
+
         addMessageToChat('user', message);
         conversationHistory.push({ role: 'user', content: message });
         $('.aicp-lead-buttons').slideUp();
+
+        if (url) {
+            window.open(url, '_blank');
+        }
+
         checkLeadCompleteness();
         saveLead();
     }
