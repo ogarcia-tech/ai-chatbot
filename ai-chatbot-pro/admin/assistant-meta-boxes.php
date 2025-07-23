@@ -334,6 +334,12 @@ function aicp_save_meta_box_data($post_id) {
     }
     unset($current['lead_closing_messages']);
 
+    if (isset($s['lead_action_messages']) && is_array($s['lead_action_messages'])) {
+        $current['lead_action_messages'] = array_map('sanitize_text_field', $s['lead_action_messages']);
+    } else {
+        $current['lead_action_messages'] = [];
+    }
+
     // Nuevos campos
     
     // Los campos PRO se guardan vacíos en la versión gratuita
