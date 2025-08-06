@@ -183,6 +183,36 @@ function aicp_render_leads_tab($assistant_id, $v) {
     echo '<br /><span class="description">' . sprintf(__('Si se deja vacío, se usará %s.', 'ai-chatbot-pro'), esc_html(get_option('admin_email'))) . '</span></p>';
     echo '<table class="form-table"><tbody>';
 
+    // Campo para URL del webhook donde se enviarán los leads
+    $webhook = esc_url($v['webhook_url'] ?? '');
+    echo '<tr><th><label for="aicp_webhook_url">' . __('Webhook URL', 'ai-chatbot-pro') . '</label></th><td>';
+    echo '<input type="url" name="aicp_settings[webhook_url]" id="aicp_webhook_url" value="' . esc_attr($webhook) . '" class="regular-text" placeholder="https://example.com/webhook" />';
+    echo '</td></tr>';
+
+    echo '</tbody></table>';
+
+
+    $action_msgs = $v['lead_action_messages'] ?? [];
+    if (empty($action_msgs) && !empty($v['lead_closing_messages'])) {
+        $old = (array) $v['lead_closing_messages'];
+        foreach ($old as $msg) {
+            $action_msgs[] = ['text' => $msg, 'url' => ''];
+        }
+    }
+
+    echo '<h4>' . __('Mensajes de Cierre', 'ai-chatbot-pro') . '</h4>';
+    echo '<table class="form-table"><tbody>';
+    for ($i = 0; $i < 3; $i++) {
+        $text = esc_attr($action_msgs[$i]['text'] ?? '');
+        $url  = esc_url($action_msgs[$i]['url'] ?? '');
+        $label = sprintf(__('Mensaje %d', 'ai-chatbot-pro'), $i + 1);
+        echo '<tr><th><label>' . esc_html($label) . '</label></th><td>';
+        echo '<input type="text" name="aicp_settings[lead_action_messages][' . $i . '][text]" value="' . $text . '" class="regular-text" style="margin-right:10px;" />';
+        echo '<input type="url" name="aicp_settings[lead_action_messages][' . $i . '][url]" value="' . $url . '" class="regular-text" placeholder="URL" />';
+        echo '</td></tr>';
+    }
+    echo '</tbody></table>';
+
 
     if (empty($leads)) {
         echo '<p>' . __('Aún no se han detectado leads.', 'ai-chatbot-pro') . '</p>';
