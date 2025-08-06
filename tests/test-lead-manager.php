@@ -96,26 +96,4 @@ class Lead_Manager_Test extends WP_UnitTestCase {
         $this->assertSame( $status, $payload['lead_status'] );
     }
 
-    public function test_save_meta_box_sanitizes_lead_action_messages() {
-        $user_id = $this->factory->user->create( [ 'role' => 'administrator' ] );
-        wp_set_current_user( $user_id );
-
-        $assistant_id = $this->factory->post->create( [ 'post_type' => 'aicp_assistant' ] );
-
-        $_POST['aicp_meta_box_nonce'] = wp_create_nonce( 'aicp_save_meta_box_data' );
-        $_POST['aicp_settings'] = [
-            'lead_action_messages' => [
-                ' <b>Hello</b> ',
-                'Good <script>alert("x")</script> '
-            ],
-        ];
-
-        aicp_save_meta_box_data( $assistant_id );
-
-        $settings = get_post_meta( $assistant_id, '_aicp_assistant_settings', true );
-        $expected = array_map( 'sanitize_text_field', [ ' <b>Hello</b> ', 'Good <script>alert("x")</script> ' ] );
-        $this->assertSame( $expected, $settings['lead_action_messages'] );
-
-        $_POST = [];
-    }
 }

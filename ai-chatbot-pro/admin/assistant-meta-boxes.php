@@ -172,28 +172,12 @@ function aicp_render_leads_tab($assistant_id, $v) {
     }
 
 
-    $action_msgs = $v['lead_action_messages'] ?? [];
-    if (empty($action_msgs) && !empty($v['lead_closing_messages'])) {
-        $old = (array) $v['lead_closing_messages'];
-        foreach ($old as $msg) {
-            $action_msgs[] = ['text' => $msg, 'url' => ''];
-        }
-    }
 
-    echo '<h4>' . __('Mensajes de Cierre', 'ai-chatbot-pro') . '</h4>';
+    $auto_collect = !empty($v['lead_auto_collect']);
+
+    echo '<h4>' . __('Ajustes de Captura de Leads', 'ai-chatbot-pro') . '</h4>';
+    echo '<p><label><input type="checkbox" name="aicp_settings[lead_auto_collect]" value="1" ' . checked($auto_collect, true, false) . '> ' . __('Solicitar datos de contacto automáticamente', 'ai-chatbot-pro') . '</label></p>';
     echo '<table class="form-table"><tbody>';
-    for ($i = 0; $i < 3; $i++) {
-        $text = esc_attr($action_msgs[$i]['text'] ?? '');
-        $url  = esc_url($action_msgs[$i]['url'] ?? '');
-        $label = sprintf(__('Mensaje %d', 'ai-chatbot-pro'), $i + 1);
-        echo '<tr><th><label>' . esc_html($label) . '</label></th><td>';
-        echo '<input type="text" name="aicp_settings[lead_action_messages][' . $i . '][text]" value="' . $text . '" class="regular-text" style="margin-right:10px;" />';
-        echo '<input type="url" name="aicp_settings[lead_action_messages][' . $i . '][url]" value="' . $url . '" class="regular-text" placeholder="URL" />';
-        echo '</td></tr>';
-    }
-    echo '</tbody></table>';
-
-
 
 
     if (empty($leads)) {
@@ -307,28 +291,6 @@ function aicp_save_meta_box_data($post_id) {
 
     // Elimina cualquier mensaje de captura previo
     unset($current['lead_prompts']);
-
-    $current['lead_action_messages'] = [];
-    if (isset($s['lead_action_messages']) && is_array($s['lead_action_messages'])) {
-        foreach ($s['lead_action_messages'] as $msg) {
-            $text = isset($msg['text']) ? sanitize_text_field($msg['text']) : '';
-            $url  = isset($msg['url']) ? esc_url_raw($msg['url']) : '';
-            if ($text !== '' || $url !== '') {
-                $current['lead_action_messages'][] = [ 'text' => $text, 'url' => $url ];
-            }
-        }
-    } elseif (isset($s['lead_closing_messages']) && is_array($s['lead_closing_messages'])) {
-        foreach ($s['lead_closing_messages'] as $msg) {
-            $current['lead_action_messages'][] = [ 'text' => sanitize_text_field($msg), 'url' => '' ];
-        }
-    }
-    unset($current['lead_closing_messages']);
-
-    if (isset($s['lead_action_messages']) && is_array($s['lead_action_messages'])) {
-        $current['lead_action_messages'] = array_map('sanitize_text_field', $s['lead_action_messages']);
-    } else {
-        $current['lead_action_messages'] = [];
-    }
 
     // Nuevos campos
     
