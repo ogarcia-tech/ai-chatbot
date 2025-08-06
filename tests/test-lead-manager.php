@@ -118,4 +118,54 @@ class Lead_Manager_Test extends WP_UnitTestCase {
 
         $_POST = [];
     }
+
+    public function test_save_meta_box_sanitizes_lead_email() {
+        $user_id = $this->factory->user->create( [ 'role' => 'administrator' ] );
+        wp_set_current_user( $user_id );
+
+        $assistant_id = $this->factory->post->create( [ 'post_type' => 'aicp_assistant' ] );
+
+        $_POST['aicp_meta_box_nonce'] = wp_create_nonce( 'aicp_save_meta_box_data' );
+        $_POST['aicp_settings'] = [ 'lead_email' => '  Lead@Example.com  ' ];
+
+        aicp_save_meta_box_data( $assistant_id );
+
+        $settings = get_post_meta( $assistant_id, '_aicp_assistant_settings', true );
+        $this->assertSame( 'Lead@example.com', $settings['lead_email'] );
+
+        $_POST = [];
+    }
+
+    public function test_email_lead_notification_uses_saved_or_admin_email() {
+        $assistant_id = $this->factory->post->create( [ 'post_type' => 'aicp_assistant' ] );
+        $lead_data    = [ 'email' => 'lead@example.com' ];
+
+        update_post_meta( $assistant_id, '_aicp_assistant_settings', [ 'lead_email' => 'notify@example.com' ] );
+
+        $captured = [];
+        add_filter( 'wp_mail', function ( $args ) use ( &$captured ) {
+            $captured[] = $args;
+            return $args;
+        } );
+
+        AICP_Lead_Manager::email_lead_notification( $lead_data, $assistant_id, 1, 'complete' );
+
+        remove_all_filters( 'wp_mail' );
+
+        $this->assertSame( 'notify@example.com', $captured[0]['to'] );
+
+        update_post_meta( $assistant_id, '_aicp_assistant_settings', [] );
+        update_option( 'admin_email', 'admin@example.com' );
+
+        add_filter( 'wp_mail', function ( $args ) use ( &$captured ) {
+            $captured[] = $args;
+            return $args;
+        } );
+
+        AICP_Lead_Manager::email_lead_notification( $lead_data, $assistant_id, 1, 'complete' );
+
+        remove_all_filters( 'wp_mail' );
+
+        $this->assertSame( 'admin@example.com', $captured[1]['to'] );
+    }
 }
