@@ -18,8 +18,10 @@ jQuery(function($) {
         website: null,
         isComplete: false
     };
+
     let isCollectingLeadData = false;
     let currentLeadField = null;
+
     // --- Patrones de detección de leads ---
     const leadPatterns = {
         email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
@@ -46,7 +48,6 @@ jQuery(function($) {
                     <input type="text" id="aicp-chat-input" placeholder="Escribe un mensaje..." autocomplete="off">
                     <button type="submit" id="aicp-send-button" aria-label="Enviar mensaje">${sendIcon}</button>
                 </form>
-                <button type="button" id="aicp-capture-lead-btn">Enviar contacto</button>
             </div>
         </div>
         <button id="aicp-chat-toggle-button" aria-label="Abrir chat">
@@ -144,15 +145,6 @@ function renderSuggestedReplies() {
             detected = true;
         }
         
-        // Detectar nombre (si estamos recolectando datos de lead)
-        if (isCollectingLeadData && currentLeadField === 'name' && !leadData.name) {
-            // Asumimos que si no contiene email, teléfono o website, es un nombre
-            if (!emailMatches && !phoneMatches && !websiteMatches && message.length > 1) {
-                leadData.name = message.trim();
-                detected = true;
-            }
-        }
-        
         return detected;
     }
 
@@ -161,8 +153,6 @@ function renderSuggestedReplies() {
 
         if (hasContact) {
             leadData.isComplete = true;
-            isCollectingLeadData = false;
-            currentLeadField = null;
 
             // Enviar datos del lead al servidor
             saveLead();
@@ -175,22 +165,6 @@ function renderSuggestedReplies() {
         if (!leadData.phone) missing.push('phone');
 
         return missing;
-    }
-
-    function askForMissingLeadData(missingFields) {
-        if (!params.lead_auto_collect || missingFields.length === 0) return;
-
-        isCollectingLeadData = true;
-        currentLeadField = missingFields[0];
-
-        const messages = params.lead_prompt_messages || {};
-        const message = messages[currentLeadField];
-
-        if (!message) return;
-
-        setTimeout(() => {
-            addMessageToChat('bot', message);
-        }, 1000);
     }
 
     function saveLead() {
@@ -276,32 +250,17 @@ function renderSuggestedReplies() {
 
 
         // Detectar datos de lead en el mensaje del usuario
-        const leadDetected = detectLeadData(message);
-        
+        detectLeadData(message);
+        if (!leadData.isComplete) {
+            checkLeadCompleteness();
+        }
+
         conversationHistory.push({ role: 'user', content: message });
         addMessageToChat('user', message);
         $('.aicp-suggested-replies').slideUp();
         showThinkingIndicator();
         $('#aicp-send-button').prop('disabled', true);
-        
-        // Si estamos recolectando datos de lead y se detectó información
-        if (isCollectingLeadData && leadDetected) {
-            currentLeadField = null;
-            isCollectingLeadData = false;
-            
-            // Verificar si el lead está completo
-            const missingFields = checkLeadCompleteness();
-            if (missingFields !== true && missingFields.length > 0) {
-                // Aún faltan campos, preguntar por el siguiente
-                setTimeout(() => {
-                    removeThinkingIndicator();
-                    $('#aicp-send-button').prop('disabled', false);
-                    askForMissingLeadData(missingFields);
-                }, 1000);
-                return;
-            }
-        }
-        
+
         $.ajax({
             url: params.ajax_url, 
             type: 'POST',
@@ -324,16 +283,12 @@ function renderSuggestedReplies() {
                     const leadStatus = response.data.lead_status;
                     const missing = response.data.missing_fields || [];
 
-                    if (leadStatus === 'partial') {
-                        if (typeof window.aicpLeadMissing === 'function') {
-                            window.aicpLeadMissing({
-                                logId: logId,
-                                assistantId: params.assistant_id,
-                                missingFields: missing
-                            });
-                        } else if (!leadData.isComplete && missing.length > 0) {
-                            askForMissingLeadData(missing);
-                        }
+                    if (leadStatus === 'partial' && typeof window.aicpLeadMissing === 'function') {
+                        window.aicpLeadMissing({
+                            logId: logId,
+                            assistantId: params.assistant_id,
+                            missingFields: missing
+                        });
                     }
                 } else {
                     addMessageToChat('bot', `Error: ${response.data.message}`);
@@ -412,27 +367,6 @@ function renderSuggestedReplies() {
         });
     }
 
-    function handleCaptureLeadClick() {
-        $.ajax({
-            url: params.ajax_url,
-            type: 'POST',
-            data: {
-                action: 'aicp_capture_lead',
-                nonce: params.nonce,
-                assistant_id: params.assistant_id,
-                log_id: logId,
-                conversation: conversationHistory
-            },
-            success: (res) => {
-                if (res.success) {
-                    addMessageToChat('bot', '¡Gracias! Hemos registrado tu interés. ✅');
-                } else {
-                    const msg = res.data && res.data.message ? res.data.message : 'Error al capturar el lead';
-                    addMessageToChat('bot', msg);
-                }
-            }
-        });
-    }
 
 
     // --- Inicialización ---
@@ -443,6 +377,5 @@ function renderSuggestedReplies() {
         $(document).on('click', '.aicp-suggested-reply', handleSuggestedReplyClick);
         $(document).on('click', '.aicp-feedback-btn', handleFeedbackClick);
         $(document).on('click', '.aicp-calendar-link', handleCalendarClick);
-        $(document).on('click', '#aicp-capture-lead-btn', handleCaptureLeadClick);
     }
 });

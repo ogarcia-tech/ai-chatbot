@@ -19,8 +19,6 @@ class AICP_Frontend_Loader {
         // AJAX handlers para funcionalidades de lead
         add_action('wp_ajax_aicp_save_lead', [__CLASS__, 'handle_save_lead']);
         add_action('wp_ajax_nopriv_aicp_save_lead', [__CLASS__, 'handle_save_lead']);
-        add_action('wp_ajax_aicp_capture_lead', [__CLASS__, 'handle_capture_lead']);
-        add_action('wp_ajax_nopriv_aicp_capture_lead', [__CLASS__, 'handle_capture_lead']);
     }
 
     private static function get_active_assistant() {
@@ -97,7 +95,9 @@ class AICP_Frontend_Loader {
         }
 
         // Obtener configuración de detección de leads
+
         $lead_auto_collect  = !empty($s['lead_auto_collect']) ? true : false;
+
 
         wp_localize_script('aicp-chatbot-script', 'aicp_chatbot_params', [
             'ajax_url' => admin_url('admin-ajax.php'),
@@ -112,6 +112,7 @@ class AICP_Frontend_Loader {
             'open_icon' => !empty($s['open_icon_url']) ? esc_url($s['open_icon_url']) : $default_bot_avatar,
             'suggested_messages' => $suggested_messages,
             'lead_auto_collect'  => $lead_auto_collect,
+
 
         ]);
     }
