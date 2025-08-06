@@ -172,10 +172,15 @@ function aicp_render_leads_tab($assistant_id, $v) {
     }
 
 
+
     $auto_collect = !empty($v['lead_auto_collect']);
+    $lead_email   = $v['lead_email'] ?? '';
 
     echo '<h4>' . __('Ajustes de Captura de Leads', 'ai-chatbot-pro') . '</h4>';
     echo '<p><label><input type="checkbox" name="aicp_settings[lead_auto_collect]" value="1" ' . checked($auto_collect, true, false) . '> ' . __('Solicitar datos de contacto automáticamente', 'ai-chatbot-pro') . '</label></p>';
+    echo '<p><label for="aicp_lead_email">' . __('Email de notificación', 'ai-chatbot-pro') . '</label><br />';
+    echo '<input type="email" id="aicp_lead_email" name="aicp_settings[lead_email]" value="' . esc_attr($lead_email) . '" class="regular-text" />';
+    echo '<br /><span class="description">' . sprintf(__('Si se deja vacío, se usará %s.', 'ai-chatbot-pro'), esc_html(get_option('admin_email'))) . '</span></p>';
     echo '<table class="form-table"><tbody>';
 
     // Campo para URL del webhook donde se enviarán los leads
@@ -207,8 +212,6 @@ function aicp_render_leads_tab($assistant_id, $v) {
         echo '</td></tr>';
     }
     echo '</tbody></table>';
-
-
 
 
     if (empty($leads)) {
@@ -320,32 +323,13 @@ function aicp_save_meta_box_data($post_id) {
     $current['color_user_bg'] = isset($s['color_user_bg']) ? sanitize_hex_color($s['color_user_bg']) : '#dcf8c6';
     $current['color_user_text'] = isset($s['color_user_text']) ? sanitize_hex_color($s['color_user_text']) : '#000000';
 
+
     // Ajustes de captura de leads
     $current['lead_auto_collect'] = !empty($s['lead_auto_collect']) ? 1 : 0;
+    $current['lead_email']        = isset($s['lead_email']) ? sanitize_email($s['lead_email']) : '';
+
     // Elimina cualquier mensaje de captura previo
     unset($current['lead_prompts']);
-
-    $current['lead_action_messages'] = [];
-    if (isset($s['lead_action_messages']) && is_array($s['lead_action_messages'])) {
-        foreach ($s['lead_action_messages'] as $msg) {
-            $text = isset($msg['text']) ? sanitize_text_field($msg['text']) : '';
-            $url  = isset($msg['url']) ? esc_url_raw($msg['url']) : '';
-            if ($text !== '' || $url !== '') {
-                $current['lead_action_messages'][] = [ 'text' => $text, 'url' => $url ];
-            }
-        }
-    } elseif (isset($s['lead_closing_messages']) && is_array($s['lead_closing_messages'])) {
-        foreach ($s['lead_closing_messages'] as $msg) {
-            $current['lead_action_messages'][] = [ 'text' => sanitize_text_field($msg), 'url' => '' ];
-        }
-    }
-    unset($current['lead_closing_messages']);
-
-    if (isset($s['lead_action_messages']) && is_array($s['lead_action_messages'])) {
-        $current['lead_action_messages'] = array_map('sanitize_text_field', $s['lead_action_messages']);
-    } else {
-        $current['lead_action_messages'] = [];
-    }
 
     // Nuevos campos
     
