@@ -99,15 +99,6 @@ class AICP_Frontend_Loader {
         // Obtener configuración de detección de leads
         $lead_auto_collect  = !empty($s['lead_auto_collect']) ? true : false;
 
-        $lead_prompt_messages = $s['lead_prompts'] ?? [];
-        $lead_action_messages = $s['lead_action_messages'] ?? [];
-        if (empty($lead_action_messages) && !empty($s['lead_closing_messages'])) {
-            foreach ((array) $s['lead_closing_messages'] as $msg) {
-                $lead_action_messages[] = ['text' => $msg, 'url' => ''];
-            }
-        }
-
-
         wp_localize_script('aicp-chatbot-script', 'aicp_chatbot_params', [
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('aicp_chat_nonce'),
@@ -121,9 +112,6 @@ class AICP_Frontend_Loader {
             'open_icon' => !empty($s['open_icon_url']) ? esc_url($s['open_icon_url']) : $default_bot_avatar,
             'suggested_messages' => $suggested_messages,
             'lead_auto_collect'  => $lead_auto_collect,
-
-            'lead_prompt_messages' => $lead_prompt_messages,
-            'lead_capture_buttons' => $lead_action_messages,
 
         ]);
     }
