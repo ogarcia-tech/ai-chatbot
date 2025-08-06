@@ -172,14 +172,6 @@ function aicp_render_leads_tab($assistant_id, $v) {
     }
 
 
-    $auto_collect = !empty($v['lead_auto_collect']);
-
-    echo '<h4>' . __('Ajustes de Captura de Leads', 'ai-chatbot-pro') . '</h4>';
-    echo '<p><label><input type="checkbox" name="aicp_settings[lead_auto_collect]" value="1" ' . checked($auto_collect, true, false) . '> ' . __('Solicitar datos de contacto automáticamente', 'ai-chatbot-pro') . '</label></p>';
-    echo '<table class="form-table"><tbody>';
-    echo '</tbody></table>';
-
-
     $action_msgs = $v['lead_action_messages'] ?? [];
     if (empty($action_msgs) && !empty($v['lead_closing_messages'])) {
         $old = (array) $v['lead_closing_messages'];
@@ -313,8 +305,6 @@ function aicp_save_meta_box_data($post_id) {
     $current['color_user_bg'] = isset($s['color_user_bg']) ? sanitize_hex_color($s['color_user_bg']) : '#dcf8c6';
     $current['color_user_text'] = isset($s['color_user_text']) ? sanitize_hex_color($s['color_user_text']) : '#000000';
 
-    // Ajustes de captura de leads
-    $current['lead_auto_collect'] = !empty($s['lead_auto_collect']) ? 1 : 0;
     // Elimina cualquier mensaje de captura previo
     unset($current['lead_prompts']);
 
