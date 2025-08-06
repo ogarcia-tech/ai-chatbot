@@ -17,6 +17,8 @@ class AICP_Ajax_Handler {
         add_action('wp_ajax_aicp_submit_feedback', [__CLASS__, 'handle_submit_feedback']);
         add_action('wp_ajax_aicp_submit_lead_form', [__CLASS__, 'handle_submit_lead_form']);
         add_action('wp_ajax_nopriv_aicp_submit_lead_form', [__CLASS__, 'handle_submit_lead_form']);
+        add_action('wp_ajax_aicp_finalize_chat', [__CLASS__, 'handle_finalize_chat']);
+        add_action('wp_ajax_nopriv_aicp_finalize_chat', [__CLASS__, 'handle_finalize_chat']);
     }
     
     private static function save_conversation($log_id, $assistant_id, $session_id, $conversation, $lead_data = []) {
@@ -164,6 +166,93 @@ class AICP_Ajax_Handler {
         ]);
     }
 
+
+    public static function handle_finalize_chat() {
+        check_ajax_referer('aicp_chat_nonce', 'nonce');
+
+        $assistant_id = isset($_POST['assistant_id']) ? absint($_POST['assistant_id']) : 0;
+        $log_id       = isset($_POST['log_id']) ? absint($_POST['log_id']) : 0;
+        $conversation = isset($_POST['conversation']) && is_array($_POST['conversation']) ? wp_unslash($_POST['conversation']) : [];
+
+        if (!$assistant_id || empty($conversation)) {
+            wp_send_json_error(['message' => __('Datos inválidos.', 'ai-chatbot-pro')]);
+        }
+
+        $global_settings = get_option('aicp_settings');
+        $api_key = $global_settings['api_key'] ?? '';
+        if (empty($api_key)) {
+            wp_send_json_error(['message' => __('La API Key de OpenAI no está configurada.', 'ai-chatbot-pro')]);
+        }
+
+        $conversation_text = '';
+        foreach ($conversation as $msg) {
+            $role = isset($msg['role']) ? strtoupper($msg['role']) : 'USER';
+            $content = isset($msg['content']) ? $msg['content'] : '';
+            $conversation_text .= "$role: $content\n";
+        }
+
+        $prompt = 'Extrae nombre, email y teléfono del siguiente chat y responde en formato JSON {"name":"","email":"","phone":""}:\n' . $conversation_text;
+
+        $api_url = 'https://api.openai.com/v1/chat/completions';
+        $api_args = [
+            'method'  => 'POST',
+            'headers' => [
+                'Content-Type'  => 'application/json',
+                'Authorization' => 'Bearer ' . $api_key,
+            ],
+            'body'    => wp_json_encode([
+                'model' => 'gpt-4o-mini',
+                'messages' => [
+                    ['role' => 'user', 'content' => $prompt]
+                ]
+            ]),
+            'timeout' => 60,
+        ];
+
+        $response = wp_remote_post($api_url, $api_args);
+
+        $lead_data = [];
+        $lead_status = 'failed';
+
+        if (!is_wp_error($response)) {
+            $body = wp_remote_retrieve_body($response);
+            $data = json_decode($body, true);
+            if (isset($data['choices'][0]['message']['content'])) {
+                $parsed = json_decode($data['choices'][0]['message']['content'], true);
+                if (is_array($parsed)) {
+                    $lead_data = [
+                        'name'  => $parsed['name']  ?? '',
+                        'email' => $parsed['email'] ?? '',
+                        'phone' => $parsed['phone'] ?? ''
+                    ];
+                    if (!empty($lead_data['email']) || !empty($lead_data['phone'])) {
+                        $lead_status = 'complete';
+                    }
+                }
+            }
+        }
+
+        $session_id = session_id() ?: uniqid('aicp_');
+        $new_log_id = self::save_conversation($log_id, $assistant_id, $session_id, $conversation);
+
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'aicp_chat_logs';
+        $wpdb->update(
+            $table_name,
+            [
+                'has_lead'   => $lead_status === 'complete' ? 1 : 0,
+                'lead_data'  => wp_json_encode($lead_data, JSON_UNESCAPED_UNICODE),
+                'lead_status'=> $lead_status
+            ],
+            ['id' => $new_log_id],
+            ['%d', '%s', '%s'],
+            ['%d']
+        );
+
+        do_action('aicp_lead_detected', $lead_data, $assistant_id, $new_log_id, $lead_status);
+
+        wp_send_json_success(['status' => $lead_status]);
+    }
 
     public static function handle_submit_feedback() {
         check_ajax_referer('aicp_feedback_nonce', 'nonce');

@@ -22,12 +22,53 @@ jQuery(function($) {
     let isCollectingLeadData = false;
     let currentLeadField = null;
 
+    let userMessageCount = 0;
+    let leadButtonsShown = false;
+    let inactivityTimer = null;
+
+    const farewellPatterns = [
+        /ad[ií]os/i,
+        /hasta luego/i,
+        /hasta pronto/i,
+        /nos vemos/i,
+        /chao/i,
+        /bye/i,
+        /goodbye/i
+    ];
+
+
     // --- Patrones de detección de leads ---
     const leadPatterns = {
         email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
         phone: /(?:\+?34[\s-]?)(?:6|7|8|9)[\s-]?\d{2}[\s-]?\d{2}[\s-]?\d{2}[\s-]?\d{2}|(?:\+?34[\s-]?)(?:91|93|94|95|96|97|98)[\s-]?\d{3}[\s-]?\d{3}/g,
         website: /(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?/g
     };
+
+    const leadButtonThreshold = 3;
+
+    function resetInactivityTimer() {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(finalizeChat, 45000);
+    }
+
+    function isFarewell(message) {
+        if (!message) return false;
+        return farewellPatterns.some(p => p.test(message.toLowerCase()));
+    }
+
+    function hasLeadIntent(message) {
+        if (!message) return false;
+        const text = message.toLowerCase();
+        const patterns = [
+            /hablar\s+con\s+(?:alguien|un\s+asesor|un\s+agente|un\s+representante)/,
+            /quiero\s+(?:un\s+)?presupuesto/,
+            /solicitar\s+presupuesto/,
+            /necesito\s+presupuesto/
+        ];
+        return patterns.some(p => p.test(text));
+    }
+
+
     // --- HTML y UI ---
     function buildChatHTML() {
         const closeIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>`;
@@ -81,6 +122,7 @@ function renderSuggestedReplies() {
     }
     
     function addMessageToChat(role, text, isCalendarMessage = false) {
+        resetInactivityTimer();
         const $chatBody = $('.aicp-chat-body');
         let sanitizedText = $('<div/>').text(text).html().replace(/\n/g, '<br>');
         
@@ -118,6 +160,10 @@ function renderSuggestedReplies() {
         
         $chatBody.append(messageHTML);
         scrollToBottom();
+
+        if (isFarewell(text)) {
+            setTimeout(finalizeChat, 1000);
+        }
     }
 
     // --- Funciones de detección de leads ---
@@ -235,9 +281,38 @@ function renderSuggestedReplies() {
     function finalizeChat() {
         if (isChatEnded) return;
         isChatEnded = true;
-        addMessageToChat('bot', 'Chat finalizado.');
+        clearTimeout(inactivityTimer);
         $('#aicp-chat-input').prop('disabled', true);
         $('#aicp-send-button').prop('disabled', true);
+
+        $.ajax({
+            url: params.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'aicp_finalize_chat',
+                nonce: params.nonce,
+                assistant_id: params.assistant_id,
+                log_id: logId,
+                conversation: conversationHistory
+            },
+            complete: () => {
+                conversationHistory = [];
+                logId = 0;
+                isChatEnded = false;
+                leadData = { email: null, name: null, phone: null, website: null, isComplete: false };
+                isCollectingLeadData = false;
+                currentLeadField = null;
+                userMessageCount = 0;
+                leadButtonsShown = false;
+                $('.aicp-chat-body').empty();
+                renderSuggestedReplies();
+                renderLeadButtons();
+                $('#aicp-chat-input').prop('disabled', false);
+                $('#aicp-send-button').prop('disabled', false);
+                if (!isChatOpen) toggleChatWindow();
+                resetInactivityTimer();
+            }
+        });
     }
     
     function scrollToBottom() {
@@ -249,17 +324,44 @@ function renderSuggestedReplies() {
         if (!message || isThinking || isChatEnded) return;
 
 
+        resetInactivityTimer();
+        userMessageCount++;
+        $('.aicp-lead-buttons').slideUp();
+
+        maybeShowLeadButtons(message);
+
         // Detectar datos de lead en el mensaje del usuario
-        detectLeadData(message);
-        if (!leadData.isComplete) {
-            checkLeadCompleteness();
-        }
+        const leadDetected = detectLeadData(message);
+
 
         conversationHistory.push({ role: 'user', content: message });
         addMessageToChat('user', message);
         $('.aicp-suggested-replies').slideUp();
+
+        if (isFarewell(message)) {
+            return;
+        }
+
         showThinkingIndicator();
         $('#aicp-send-button').prop('disabled', true);
+
+        // Si estamos recolectando datos de lead y se detectó información
+        if (isCollectingLeadData && leadDetected) {
+            currentLeadField = null;
+            isCollectingLeadData = false;
+
+            // Verificar si el lead está completo
+            const missingFields = checkLeadCompleteness();
+            if (missingFields !== true && missingFields.length > 0) {
+                // Aún faltan campos, preguntar por el siguiente
+                setTimeout(() => {
+                    removeThinkingIndicator();
+                    $('#aicp-send-button').prop('disabled', false);
+                    askForMissingLeadData(missingFields);
+                }, 1000);
+                return;
+            }
+        }
 
         $.ajax({
             url: params.ajax_url, 
@@ -377,5 +479,9 @@ function renderSuggestedReplies() {
         $(document).on('click', '.aicp-suggested-reply', handleSuggestedReplyClick);
         $(document).on('click', '.aicp-feedback-btn', handleFeedbackClick);
         $(document).on('click', '.aicp-calendar-link', handleCalendarClick);
+
+        $(document).on('click', '#aicp-capture-lead-btn', handleCaptureLeadClick);
+        resetInactivityTimer();
+
     }
 });
