@@ -174,9 +174,13 @@ function aicp_render_leads_tab($assistant_id, $v) {
 
 
     $auto_collect = !empty($v['lead_auto_collect']);
+    $lead_email   = $v['lead_email'] ?? '';
 
     echo '<h4>' . __('Ajustes de Captura de Leads', 'ai-chatbot-pro') . '</h4>';
     echo '<p><label><input type="checkbox" name="aicp_settings[lead_auto_collect]" value="1" ' . checked($auto_collect, true, false) . '> ' . __('Solicitar datos de contacto automáticamente', 'ai-chatbot-pro') . '</label></p>';
+    echo '<p><label for="aicp_lead_email">' . __('Email de notificación', 'ai-chatbot-pro') . '</label><br />';
+    echo '<input type="email" id="aicp_lead_email" name="aicp_settings[lead_email]" value="' . esc_attr($lead_email) . '" class="regular-text" />';
+    echo '<br /><span class="description">' . sprintf(__('Si se deja vacío, se usará %s.', 'ai-chatbot-pro'), esc_html(get_option('admin_email'))) . '</span></p>';
     echo '<table class="form-table"><tbody>';
 
 
@@ -288,6 +292,11 @@ function aicp_save_meta_box_data($post_id) {
     $current['color_bot_text'] = isset($s['color_bot_text']) ? sanitize_hex_color($s['color_bot_text']) : '#333333';
     $current['color_user_bg'] = isset($s['color_user_bg']) ? sanitize_hex_color($s['color_user_bg']) : '#dcf8c6';
     $current['color_user_text'] = isset($s['color_user_text']) ? sanitize_hex_color($s['color_user_text']) : '#000000';
+
+
+    // Ajustes de captura de leads
+    $current['lead_auto_collect'] = !empty($s['lead_auto_collect']) ? 1 : 0;
+    $current['lead_email']        = isset($s['lead_email']) ? sanitize_email($s['lead_email']) : '';
 
     // Elimina cualquier mensaje de captura previo
     unset($current['lead_prompts']);

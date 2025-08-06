@@ -36,6 +36,9 @@ class AICP_Lead_Manager {
 
         // Enviar lead a webhook si se configura
         add_action('aicp_lead_detected', [__CLASS__, 'send_lead_to_webhook'], 10, 4);
+
+        // Notificar por email si corresponde
+
         add_action('aicp_lead_detected', [__CLASS__, 'email_lead_notification'], 10, 4);
     }
     
@@ -194,15 +197,29 @@ class AICP_Lead_Manager {
         }
     }
 
-    public static function email_lead_notification($lead_data, $assistant_id, $log_id, $lead_status) {
-        $to = get_option('admin_email');
-        $subject = ($lead_status === 'complete') ? __('Nuevo lead capturado', 'ai-chatbot-pro') : __('Lead fallido', 'ai-chatbot-pro');
-        $body  = "Asistente ID: $assistant_id\nLog ID: $log_id\n";
-        $body .= isset($lead_data['name'])  ? "Nombre: {$lead_data['name']}\n"   : '';
-        $body .= isset($lead_data['email']) ? "Email: {$lead_data['email']}\n"   : '';
-        $body .= isset($lead_data['phone']) ? "Teléfono: {$lead_data['phone']}\n" : '';
 
-        wp_mail($to, $subject, $body);
+    /**
+     * Enviar notificación por email con los datos del lead.
+     */
+    public static function email_lead_notification($lead_data, $assistant_id, $log_id, $lead_status) {
+        $settings = get_post_meta($assistant_id, '_aicp_assistant_settings', true);
+        $email    = isset($settings['lead_email']) ? sanitize_email($settings['lead_email']) : '';
+        if (!$email) {
+            $email = get_option('admin_email');
+        }
+        if (!$email) {
+            return;
+        }
+
+        $subject = __('Nuevo lead detectado', 'ai-chatbot-pro');
+        $lines   = [];
+        foreach ($lead_data as $key => $value) {
+            $lines[] = ucfirst($key) . ': ' . $value;
+        }
+        $message = implode("\n", $lines);
+
+        wp_mail($email, $subject, $message);
+
     }
     
     /**
