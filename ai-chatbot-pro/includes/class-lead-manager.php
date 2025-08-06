@@ -36,6 +36,7 @@ class AICP_Lead_Manager {
 
         // Enviar lead a webhook si se configura
         add_action('aicp_lead_detected', [__CLASS__, 'send_lead_to_webhook'], 10, 4);
+        add_action('aicp_lead_detected', [__CLASS__, 'email_lead_notification'], 10, 4);
     }
     
     /**
@@ -191,6 +192,17 @@ class AICP_Lead_Manager {
         if (is_wp_error($response)) {
             error_log('AICP Lead Webhook error: ' . $response->get_error_message());
         }
+    }
+
+    public static function email_lead_notification($lead_data, $assistant_id, $log_id, $lead_status) {
+        $to = get_option('admin_email');
+        $subject = ($lead_status === 'complete') ? __('Nuevo lead capturado', 'ai-chatbot-pro') : __('Lead fallido', 'ai-chatbot-pro');
+        $body  = "Asistente ID: $assistant_id\nLog ID: $log_id\n";
+        $body .= isset($lead_data['name'])  ? "Nombre: {$lead_data['name']}\n"   : '';
+        $body .= isset($lead_data['email']) ? "Email: {$lead_data['email']}\n"   : '';
+        $body .= isset($lead_data['phone']) ? "Teléfono: {$lead_data['phone']}\n" : '';
+
+        wp_mail($to, $subject, $body);
     }
     
     /**

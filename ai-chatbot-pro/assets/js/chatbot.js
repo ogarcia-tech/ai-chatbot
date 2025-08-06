@@ -31,6 +31,17 @@ jQuery(function($) {
     let currentLeadField = null;
     let userMessageCount = 0;
     let leadButtonsShown = false;
+    let inactivityTimer = null;
+
+    const farewellPatterns = [
+        /ad[ií]os/i,
+        /hasta luego/i,
+        /hasta pronto/i,
+        /nos vemos/i,
+        /chao/i,
+        /bye/i,
+        /goodbye/i
+    ];
 
     // --- Patrones de detección de leads ---
     const leadPatterns = {
@@ -39,6 +50,16 @@ jQuery(function($) {
         website: /(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?/g
     };
     const leadButtonThreshold = 3;
+
+    function resetInactivityTimer() {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(finalizeChat, 45000);
+    }
+
+    function isFarewell(message) {
+        if (!message) return false;
+        return farewellPatterns.some(p => p.test(message.toLowerCase()));
+    }
 
     function hasLeadIntent(message) {
         if (!message) return false;
@@ -131,6 +152,7 @@ function renderSuggestedReplies() {
     }
     
     function addMessageToChat(role, text, isCalendarMessage = false) {
+        resetInactivityTimer();
         const $chatBody = $('.aicp-chat-body');
         let sanitizedText = $('<div/>').text(text).html().replace(/\n/g, '<br>');
         
@@ -168,6 +190,10 @@ function renderSuggestedReplies() {
         
         $chatBody.append(messageHTML);
         scrollToBottom();
+
+        if (isFarewell(text)) {
+            setTimeout(finalizeChat, 1000);
+        }
     }
 
     // --- Funciones de detección de leads ---
@@ -312,9 +338,38 @@ function renderSuggestedReplies() {
     function finalizeChat() {
         if (isChatEnded) return;
         isChatEnded = true;
-        addMessageToChat('bot', 'Chat finalizado.');
+        clearTimeout(inactivityTimer);
         $('#aicp-chat-input').prop('disabled', true);
         $('#aicp-send-button').prop('disabled', true);
+
+        $.ajax({
+            url: params.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'aicp_finalize_chat',
+                nonce: params.nonce,
+                assistant_id: params.assistant_id,
+                log_id: logId,
+                conversation: conversationHistory
+            },
+            complete: () => {
+                conversationHistory = [];
+                logId = 0;
+                isChatEnded = false;
+                leadData = { email: null, name: null, phone: null, website: null, isComplete: false };
+                isCollectingLeadData = false;
+                currentLeadField = null;
+                userMessageCount = 0;
+                leadButtonsShown = false;
+                $('.aicp-chat-body').empty();
+                renderSuggestedReplies();
+                renderLeadButtons();
+                $('#aicp-chat-input').prop('disabled', false);
+                $('#aicp-send-button').prop('disabled', false);
+                if (!isChatOpen) toggleChatWindow();
+                resetInactivityTimer();
+            }
+        });
     }
     
     function scrollToBottom() {
@@ -336,25 +391,31 @@ function renderSuggestedReplies() {
     function sendMessage(message) {
         if (!message || isThinking || isChatEnded) return;
 
+        resetInactivityTimer();
         userMessageCount++;
         $('.aicp-lead-buttons').slideUp();
 
         maybeShowLeadButtons(message);
-        
+
         // Detectar datos de lead en el mensaje del usuario
         const leadDetected = detectLeadData(message);
-        
+
         conversationHistory.push({ role: 'user', content: message });
         addMessageToChat('user', message);
         $('.aicp-suggested-replies').slideUp();
+
+        if (isFarewell(message)) {
+            return;
+        }
+
         showThinkingIndicator();
         $('#aicp-send-button').prop('disabled', true);
-        
+
         // Si estamos recolectando datos de lead y se detectó información
         if (isCollectingLeadData && leadDetected) {
             currentLeadField = null;
             isCollectingLeadData = false;
-            
+
             // Verificar si el lead está completo
             const missingFields = checkLeadCompleteness();
             if (missingFields !== true && missingFields.length > 0) {
@@ -528,5 +589,6 @@ function renderSuggestedReplies() {
         $(document).on('click', '.aicp-feedback-btn', handleFeedbackClick);
         $(document).on('click', '.aicp-calendar-link', handleCalendarClick);
         $(document).on('click', '#aicp-capture-lead-btn', handleCaptureLeadClick);
+        resetInactivityTimer();
     }
 });
