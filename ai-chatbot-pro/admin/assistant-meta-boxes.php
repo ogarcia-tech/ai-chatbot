@@ -177,6 +177,13 @@ function aicp_render_leads_tab($assistant_id, $v) {
     echo '<h4>' . __('Ajustes de Captura de Leads', 'ai-chatbot-pro') . '</h4>';
     echo '<p><label><input type="checkbox" name="aicp_settings[lead_auto_collect]" value="1" ' . checked($auto_collect, true, false) . '> ' . __('Solicitar datos de contacto automáticamente', 'ai-chatbot-pro') . '</label></p>';
     echo '<table class="form-table"><tbody>';
+
+    // Campo para URL del webhook donde se enviarán los leads
+    $webhook = esc_url($v['webhook_url'] ?? '');
+    echo '<tr><th><label for="aicp_webhook_url">' . __('Webhook URL', 'ai-chatbot-pro') . '</label></th><td>';
+    echo '<input type="url" name="aicp_settings[webhook_url]" id="aicp_webhook_url" value="' . esc_attr($webhook) . '" class="regular-text" placeholder="https://example.com/webhook" />';
+    echo '</td></tr>';
+
     echo '</tbody></table>';
 
 
