@@ -6,15 +6,6 @@ jQuery(function($) {
     const params = window.aicp_chatbot_params;
     if (!params) return;
 
-    if (Array.isArray(params.lead_capture_buttons)) {
-        params.lead_capture_buttons = params.lead_capture_buttons.map(btn => {
-            if (typeof btn === 'string') {
-                return { text: btn, url: '' };
-            }
-            return btn;
-        });
-    }
-
     let conversationHistory = [];
     let logId = 0;
     let isChatOpen = false;
@@ -27,8 +18,10 @@ jQuery(function($) {
         website: null,
         isComplete: false
     };
+
     let isCollectingLeadData = false;
     let currentLeadField = null;
+
     let userMessageCount = 0;
     let leadButtonsShown = false;
     let inactivityTimer = null;
@@ -43,12 +36,14 @@ jQuery(function($) {
         /goodbye/i
     ];
 
+
     // --- Patrones de detección de leads ---
     const leadPatterns = {
         email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
         phone: /(?:\+?34[\s-]?)(?:6|7|8|9)[\s-]?\d{2}[\s-]?\d{2}[\s-]?\d{2}[\s-]?\d{2}|(?:\+?34[\s-]?)(?:91|93|94|95|96|97|98)[\s-]?\d{3}[\s-]?\d{3}/g,
         website: /(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?/g
     };
+
     const leadButtonThreshold = 3;
 
     function resetInactivityTimer() {
@@ -73,6 +68,7 @@ jQuery(function($) {
         return patterns.some(p => p.test(text));
     }
 
+
     // --- HTML y UI ---
     function buildChatHTML() {
         const closeIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>`;
@@ -87,14 +83,12 @@ jQuery(function($) {
                 <div class="aicp-header-title">${params.header_title}</div>
             </div>
             <div class="aicp-chat-body"></div>
-            <div class="aicp-suggested-replies"></div>
-            <div class="aicp-lead-buttons"></div>
-            <div class="aicp-chat-footer">
+              <div class="aicp-suggested-replies"></div>
+              <div class="aicp-chat-footer">
                 <form id="aicp-chat-form">
                     <input type="text" id="aicp-chat-input" placeholder="Escribe un mensaje..." autocomplete="off">
                     <button type="submit" id="aicp-send-button" aria-label="Enviar mensaje">${sendIcon}</button>
                 </form>
-                <button type="button" id="aicp-capture-lead-btn">Enviar contacto</button>
             </div>
         </div>
         <button id="aicp-chat-toggle-button" aria-label="Abrir chat">
@@ -103,8 +97,7 @@ jQuery(function($) {
         </button>
         `;
         $('#aicp-chatbot-container').addClass(`position-${params.position}`).html(chatbotHTML);
-        renderSuggestedReplies();
-        renderLeadButtons();
+          renderSuggestedReplies();
     }
 
 function renderSuggestedReplies() {
@@ -120,29 +113,6 @@ function renderSuggestedReplies() {
                 $container.append($button);
             }
         });
-    }
-
-    function renderLeadButtons() {
-        const $container = $('.aicp-lead-buttons');
-        if (!params.lead_capture_buttons || params.lead_capture_buttons.length === 0) {
-            $container.hide();
-            return;
-        }
-
-        $container.empty();
-        params.lead_capture_buttons.forEach(btn => {
-            if (!btn) return;
-            const text = typeof btn === 'string' ? btn : btn.text;
-            const url  = (typeof btn === 'object' && btn.url) ? btn.url : '';
-            if (text) {
-                const $btn = $('<button class="aicp-lead-button"></button>')
-                    .text(text)
-                    .attr('data-text', text)
-                    .attr('data-url', url);
-                $container.append($btn);
-            }
-        });
-        $container.hide();
     }
 
     function toggleChatWindow() {
@@ -221,15 +191,6 @@ function renderSuggestedReplies() {
             detected = true;
         }
         
-        // Detectar nombre (si estamos recolectando datos de lead)
-        if (isCollectingLeadData && currentLeadField === 'name' && !leadData.name) {
-            // Asumimos que si no contiene email, teléfono o website, es un nombre
-            if (!emailMatches && !phoneMatches && !websiteMatches && message.length > 1) {
-                leadData.name = message.trim();
-                detected = true;
-            }
-        }
-        
         return detected;
     }
 
@@ -238,8 +199,6 @@ function renderSuggestedReplies() {
 
         if (hasContact) {
             leadData.isComplete = true;
-            isCollectingLeadData = false;
-            currentLeadField = null;
 
             // Enviar datos del lead al servidor
             saveLead();
@@ -252,22 +211,6 @@ function renderSuggestedReplies() {
         if (!leadData.phone) missing.push('phone');
 
         return missing;
-    }
-
-    function askForMissingLeadData(missingFields) {
-        if (!params.lead_auto_collect || missingFields.length === 0) return;
-
-        isCollectingLeadData = true;
-        currentLeadField = missingFields[0];
-
-        const messages = params.lead_prompt_messages || {};
-        const message = messages[currentLeadField];
-
-        if (!message) return;
-
-        setTimeout(() => {
-            addMessageToChat('bot', message);
-        }, 1000);
     }
 
     function saveLead() {
@@ -377,19 +320,9 @@ function renderSuggestedReplies() {
         $chatBody.scrollTop($chatBody[0].scrollHeight);
     }
 
-    function maybeShowLeadButtons(message) {
-        if (leadButtonsShown) return;
-        if (userMessageCount >= leadButtonThreshold || hasLeadIntent(message)) {
-            const $container = $('.aicp-lead-buttons');
-            if ($container.children().length > 0) {
-                $container.slideDown();
-                leadButtonsShown = true;
-            }
-        }
-    }
-
     function sendMessage(message) {
         if (!message || isThinking || isChatEnded) return;
+
 
         resetInactivityTimer();
         userMessageCount++;
@@ -399,6 +332,7 @@ function renderSuggestedReplies() {
 
         // Detectar datos de lead en el mensaje del usuario
         const leadDetected = detectLeadData(message);
+
 
         conversationHistory.push({ role: 'user', content: message });
         addMessageToChat('user', message);
@@ -428,7 +362,7 @@ function renderSuggestedReplies() {
                 return;
             }
         }
-        
+
         $.ajax({
             url: params.ajax_url, 
             type: 'POST',
@@ -446,22 +380,17 @@ function renderSuggestedReplies() {
                     logId = response.data.log_id;
                     conversationHistory.push({ role: 'assistant', content: botReply });
 
-                    addMessageToChat('bot', botReply);
-                    maybeShowLeadButtons(message);
+                      addMessageToChat('bot', botReply);
 
                     const leadStatus = response.data.lead_status;
                     const missing = response.data.missing_fields || [];
 
-                    if (leadStatus === 'partial') {
-                        if (typeof window.aicpLeadMissing === 'function') {
-                            window.aicpLeadMissing({
-                                logId: logId,
-                                assistantId: params.assistant_id,
-                                missingFields: missing
-                            });
-                        } else if (!leadData.isComplete && missing.length > 0) {
-                            askForMissingLeadData(missing);
-                        }
+                    if (leadStatus === 'partial' && typeof window.aicpLeadMissing === 'function') {
+                        window.aicpLeadMissing({
+                            logId: logId,
+                            assistantId: params.assistant_id,
+                            missingFields: missing
+                        });
                     }
                 } else {
                     addMessageToChat('bot', `Error: ${response.data.message}`);
@@ -486,23 +415,6 @@ function renderSuggestedReplies() {
     function handleSuggestedReplyClick() {
         const message = $(this).text();
         sendMessage(message);
-    }
-
-    function handleLeadButtonClick() {
-        const $btn = $(this);
-        const message = $btn.data('text') || $btn.text();
-        const url = $btn.data('url');
-
-        addMessageToChat('user', message);
-        conversationHistory.push({ role: 'user', content: message });
-        $('.aicp-lead-buttons').slideUp();
-
-        if (url) {
-            window.open(url, '_blank');
-        }
-
-        checkLeadCompleteness();
-        saveLead();
     }
 
     function handleFeedbackClick() {
@@ -557,27 +469,6 @@ function renderSuggestedReplies() {
         });
     }
 
-    function handleCaptureLeadClick() {
-        $.ajax({
-            url: params.ajax_url,
-            type: 'POST',
-            data: {
-                action: 'aicp_capture_lead',
-                nonce: params.nonce,
-                assistant_id: params.assistant_id,
-                log_id: logId,
-                conversation: conversationHistory
-            },
-            success: (res) => {
-                if (res.success) {
-                    addMessageToChat('bot', '¡Gracias! Hemos registrado tu interés. ✅');
-                } else {
-                    const msg = res.data && res.data.message ? res.data.message : 'Error al capturar el lead';
-                    addMessageToChat('bot', msg);
-                }
-            }
-        });
-    }
 
 
     // --- Inicialización ---
@@ -588,7 +479,9 @@ function renderSuggestedReplies() {
         $(document).on('click', '.aicp-suggested-reply', handleSuggestedReplyClick);
         $(document).on('click', '.aicp-feedback-btn', handleFeedbackClick);
         $(document).on('click', '.aicp-calendar-link', handleCalendarClick);
+
         $(document).on('click', '#aicp-capture-lead-btn', handleCaptureLeadClick);
         resetInactivityTimer();
+
     }
 });

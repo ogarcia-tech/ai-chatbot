@@ -85,11 +85,6 @@
 .aicp-suggested-reply { background-color: #fff; border: 1px solid #ccc; border-radius: 20px; padding: 6px 12px; font-size: 0.85em; cursor: pointer; transition: background-color 0.2s; }
 .aicp-suggested-reply:hover { background-color: #e9e9e9; }
 
-/* Botones de cierre de lead */
-.aicp-lead-buttons { padding: 0 15px 10px; display: none; flex-wrap: wrap; gap: 8px; }
-.aicp-lead-button { background-color: #fff; border: 1px solid #ccc; border-radius: 20px; padding: 6px 12px; font-size: 0.85em; cursor: pointer; transition: background-color 0.2s; }
-.aicp-lead-button:hover { background-color: #e9e9e9; }
-
 /* Pie de página */
 .aicp-chat-footer { padding: 10px 15px; background: #fff; border-top: 1px solid #e0e0e0; flex-shrink: 0; }
 .aicp-chat-footer form { display: flex; align-items: center; gap: 10px; }
@@ -98,16 +93,6 @@
 .aicp-chat-footer button:disabled { background-color: #ccc; cursor: not-allowed; }
 .aicp-chat-footer button svg { width: 20px; height: 20px; }
 
-#aicp-capture-lead-btn {
-    margin-left: 8px;
-    padding: 6px 12px;
-    background: var(--aicp-color-primary);
-    color: #fff;
-    border: none;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 0.85em;
-}
 
 /* Formulario de leads */
 #aicp-lead-form-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:10001; }
