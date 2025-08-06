@@ -254,7 +254,7 @@ function aicp_render_leads_tab($assistant_id, $v) {
             echo '<td>' . date_i18n(get_option('date_format') . ' H:i', strtotime($log->timestamp)) . '</td>';
             echo '<td>' . esc_html(wp_trim_words($log->first_user_message, 15, '...')) . '</td>';
             echo '<td>';
-            echo '<button class="button button-secondary aicp-view-log-details" data-log-id="' . $log->id . '">' . __('Ver Detalles', 'ai-chatbot-pro') . '</button>';
+            echo '<button class="button button-secondary aicp-view-log-details" data-log-id="' . $log->id . '">' . __('Ver conversación', 'ai-chatbot-pro') . '</button>';
             echo '</td>';
             echo '</tr>';
         }

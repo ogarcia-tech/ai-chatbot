@@ -332,8 +332,8 @@ msgstr ""
 msgid "Acciones"
 msgstr ""
 
-#: ai-chatbot-pro/admin/assistant-meta-boxes.php:216
-msgid "Ver Detalles"
+#: ai-chatbot-pro/admin/assistant-meta-boxes.php:257
+msgid "Ver conversación"
 msgstr ""
 
 #: ai-chatbot-pro/admin/cpt.php:12
