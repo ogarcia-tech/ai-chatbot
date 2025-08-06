@@ -36,7 +36,9 @@ class AICP_Lead_Manager {
 
         // Enviar lead a webhook si se configura
         add_action('aicp_lead_detected', [__CLASS__, 'send_lead_to_webhook'], 10, 4);
+
         // Notificar por email si corresponde
+
         add_action('aicp_lead_detected', [__CLASS__, 'email_lead_notification'], 10, 4);
     }
     
@@ -195,6 +197,7 @@ class AICP_Lead_Manager {
         }
     }
 
+
     /**
      * Enviar notificación por email con los datos del lead.
      */
@@ -216,6 +219,7 @@ class AICP_Lead_Manager {
         $message = implode("\n", $lines);
 
         wp_mail($email, $subject, $message);
+
     }
     
     /**

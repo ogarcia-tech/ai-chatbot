@@ -96,6 +96,7 @@ class Lead_Manager_Test extends WP_UnitTestCase {
         $this->assertSame( $status, $payload['lead_status'] );
     }
 
+
     public function test_save_meta_box_sanitizes_lead_action_messages() {
         $user_id = $this->factory->user->create( [ 'role' => 'administrator' ] );
         wp_set_current_user( $user_id );
@@ -168,4 +169,5 @@ class Lead_Manager_Test extends WP_UnitTestCase {
 
         $this->assertSame( 'admin@example.com', $captured[1]['to'] );
     }
+
 }
