@@ -82,8 +82,29 @@ class AICP_Pinecone_Manager {
         return trim($content);
     }
 
-    private static function chunk_content($text, $chunk_size = 500) {
-        return str_split($text, $chunk_size);
+    /**
+     * Split text into chunks using a multibyte-safe approach and an approximate token count.
+     *
+     * OpenAI embeddings are limited by tokens rather than characters.  Assuming an
+     * average of four characters per token gives a reasonable approximation for
+     * chunking without running heavy tokenizers.  Using mb_substr ensures we do not
+     * break multibyte characters when splitting the text.
+     *
+     * @param string $text        The text to split.
+     * @param int    $token_limit Approximate number of tokens per chunk.
+     * @return array<string>      The text divided into chunks.
+     */
+    private static function chunk_content($text, $token_limit = 500) {
+        $encoding = 'UTF-8';
+        $approx_char_limit = $token_limit * 4; // ~4 characters per token
+        $chunks = [];
+        $length = mb_strlen($text, $encoding);
+
+        for ($start = 0; $start < $length; $start += $approx_char_limit) {
+            $chunks[] = mb_substr($text, $start, $approx_char_limit, $encoding);
+        }
+
+        return $chunks;
     }
 
     private static function create_embedding($text) {
