@@ -14,9 +14,13 @@ class AICP_Pinecone_Manager {
             wp_send_json_error(['message' => 'Error: No se ha identificado al asistente.']);
         }
         
-        // Obtenemos los ajustes de ESE asistente para saber qué posts tiene seleccionados.
-        $settings = get_post_meta($assistant_id, '_aicp_assistant_settings', true);
-        $post_ids_to_index = $settings['training_post_ids'] ?? [];
+        // Verificamos si se nos han enviado IDs de post específicos.
+        $post_ids_to_index = !empty($_POST['post_ids']) ? array_map('intval', (array) $_POST['post_ids']) : [];
+        if (empty($post_ids_to_index)) {
+            // Si no se proporcionaron, tomamos los IDs guardados en los ajustes del asistente.
+            $settings = get_post_meta($assistant_id, '_aicp_assistant_settings', true);
+            $post_ids_to_index = $settings['training_post_ids'] ?? [];
+        }
         // --- FIN DE LA CORRECCIÓN ---
 
         if (empty($post_ids_to_index)) {
