@@ -14,6 +14,7 @@ class AICP_Pinecone_Manager {
             wp_send_json_error(['message' => 'Error: No se ha identificado al asistente.']);
         }
         
+
         // Obtenemos los ajustes de ESE asistente para saber qué posts tiene seleccionados.
         $settings = get_post_meta($assistant_id, '_aicp_assistant_settings', true);
         $post_ids_to_index = $settings['training_post_ids'] ?? [];
@@ -27,6 +28,7 @@ class AICP_Pinecone_Manager {
                 'fields'         => 'ids',
             ]);
             $post_ids_to_index = array_unique(array_merge($post_ids_to_index, $posts_in_types));
+
         }
         // --- FIN DE LA CORRECCIÓN ---
 
