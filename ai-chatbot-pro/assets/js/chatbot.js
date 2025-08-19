@@ -115,6 +115,31 @@ function renderSuggestedReplies() {
         });
     }
 
+    function renderLeadButtons() {
+        let $container = $('.aicp-lead-buttons');
+        if ($container.length === 0) {
+            const html = `
+            <div class="aicp-lead-buttons" style="display:none;">
+                <button id="aicp-capture-lead-btn" type="button">Dejar mis datos</button>
+                <button id="aicp-dismiss-lead-btn" type="button">No, gracias</button>
+            </div>`;
+            $('.aicp-chat-footer').before(html);
+            $container = $('.aicp-lead-buttons');
+        }
+        $container.hide();
+    }
+
+    function maybeShowLeadButtons(message) {
+        if (leadButtonsShown || leadData.isComplete) return;
+        const reachedThreshold = userMessageCount >= leadButtonThreshold;
+        const contactIntent = hasLeadIntent(message);
+        if (reachedThreshold || contactIntent) {
+            renderLeadButtons();
+            $('.aicp-lead-buttons').slideDown();
+            leadButtonsShown = true;
+        }
+    }
+
     function toggleChatWindow() {
         isChatOpen = !isChatOpen;
         $('#aicp-chat-window, #aicp-chat-toggle-button').toggleClass('active');
@@ -469,11 +494,46 @@ function renderSuggestedReplies() {
         });
     }
 
+    function handleCaptureLeadClick(e) {
+        e.preventDefault();
+        $.ajax({
+            url: params.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'aicp_capture_lead',
+                nonce: params.nonce,
+                assistant_id: params.assistant_id,
+                log_id: logId,
+                conversation: conversationHistory
+            },
+            success: function(response) {
+                if (response.success && response.data && response.data.lead) {
+                    leadData = { ...leadData, ...response.data.lead };
+                    leadData.isComplete = !!(leadData.email || leadData.phone);
+                    leadData.source = 'button';
+                    saveLead();
+                }
+                $('.aicp-lead-buttons').slideUp();
+                leadButtonsShown = true;
+            },
+            error: function() {
+                $('.aicp-lead-buttons').slideUp();
+                leadButtonsShown = true;
+            }
+        });
+    }
+
+    function handleLeadDismissClick() {
+        $('.aicp-lead-buttons').slideUp();
+        leadButtonsShown = true;
+    }
+
 
 
     // --- Inicialización ---
     if ($('#aicp-chatbot-container').length > 0) {
         buildChatHTML();
+        renderLeadButtons();
         $(document).on('click', '#aicp-chat-toggle-button', toggleChatWindow);
         $(document).on('submit', '#aicp-chat-form', handleFormSubmit);
         $(document).on('click', '.aicp-suggested-reply', handleSuggestedReplyClick);
@@ -481,6 +541,7 @@ function renderSuggestedReplies() {
         $(document).on('click', '.aicp-calendar-link', handleCalendarClick);
 
         $(document).on('click', '#aicp-capture-lead-btn', handleCaptureLeadClick);
+        $(document).on('click', '#aicp-dismiss-lead-btn', handleLeadDismissClick);
         resetInactivityTimer();
 
     }
