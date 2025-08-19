@@ -46,6 +46,7 @@ jQuery(function($) {
                 const attachment = mediaUploader.state().get('selection').first().toJSON();
                 const url = attachment.url;
                 $('#' + targetId + '_url').val(url).trigger('change');
+                $('#' + targetId + '_preview').attr('src', url).addClass('has-image');
             });
             mediaUploader.open();
         });
@@ -56,8 +57,9 @@ jQuery(function($) {
             if (targetId === 'bot_avatar') defaultImage = aicp_admin_params.default_bot_avatar;
             else if (targetId === 'user_avatar') defaultImage = aicp_admin_params.default_user_avatar;
             else if (targetId === 'open_icon') defaultImage = aicp_admin_params.default_open_icon;
-            
+
             $('#' + targetId + '_url').val(defaultImage).trigger('change');
+            $('#' + targetId + '_preview').attr('src', defaultImage).removeClass('has-image');
         });
     }
     
