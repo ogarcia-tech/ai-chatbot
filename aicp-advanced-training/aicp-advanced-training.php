@@ -41,7 +41,7 @@ function aicp_pro_enqueue_admin_scripts($hook) {
             wp_enqueue_script(
                 'aicp-admin-pro-js',
                 $plugin_url . 'assets/js/admin-pro.js',
-                ['jquery'],
+                ['jquery', 'aicp-admin-script'],
                 '1.0',
                 true
             );
