@@ -14,21 +14,24 @@ class AICP_Pinecone_Manager {
             wp_send_json_error(['message' => 'Error: No se ha identificado al asistente.']);
         }
         
+
         // Obtenemos los ajustes de ESE asistente para saber qué posts tiene seleccionados.
         $settings = get_post_meta($assistant_id, '_aicp_assistant_settings', true);
         $post_ids_to_index = $settings['training_post_ids'] ?? [];
         $namespace = $settings['pinecone_namespace'] ?? 'assistant_' . $assistant_id;
+
+
         // --- FIN DE LA CORRECCIÓN ---
 
         if (empty($post_ids_to_index)) {
             wp_send_json_error(['message' => 'No has seleccionado ningún contenido para sincronizar en la pestaña de Funciones PRO.']);
         }
-        
+
         $posts_to_index = get_posts([
-            'post__in' => $post_ids_to_index,
-            'post_type' => 'any', // Buscamos en cualquier tipo de post para asegurar que encontramos los IDs
-            'posts_per_page' => -1,
-            'post_status' => 'publish',
+            'post__in'        => $post_ids_to_index,
+            'post_type'       => 'any', // Buscamos en cualquier tipo de post para asegurar que encontramos los IDs
+            'posts_per_page'  => -1,
+            'post_status'     => 'publish',
         ]);
         
         // Si por alguna razón los posts seleccionados ya no existen, devolvemos 0.
