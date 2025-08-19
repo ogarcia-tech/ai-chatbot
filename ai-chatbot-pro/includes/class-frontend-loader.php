@@ -19,6 +19,8 @@ class AICP_Frontend_Loader {
         // AJAX handlers para funcionalidades de lead
         add_action('wp_ajax_aicp_save_lead', [__CLASS__, 'handle_save_lead']);
         add_action('wp_ajax_nopriv_aicp_save_lead', [__CLASS__, 'handle_save_lead']);
+        add_action('wp_ajax_aicp_capture_lead', [__CLASS__, 'handle_capture_lead']);
+        add_action('wp_ajax_nopriv_aicp_capture_lead', [__CLASS__, 'handle_capture_lead']);
     }
 
     private static function get_active_assistant() {
