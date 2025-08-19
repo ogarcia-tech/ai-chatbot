@@ -191,29 +191,6 @@ function aicp_render_leads_tab($assistant_id, $v) {
 
     echo '</tbody></table>';
 
-
-    $action_msgs = $v['lead_action_messages'] ?? [];
-    if (empty($action_msgs) && !empty($v['lead_closing_messages'])) {
-        $old = (array) $v['lead_closing_messages'];
-        foreach ($old as $msg) {
-            $action_msgs[] = ['text' => $msg, 'url' => ''];
-        }
-    }
-
-    echo '<h4>' . __('Mensajes de Cierre', 'ai-chatbot-pro') . '</h4>';
-    echo '<table class="form-table"><tbody>';
-    for ($i = 0; $i < 3; $i++) {
-        $text = esc_attr($action_msgs[$i]['text'] ?? '');
-        $url  = esc_url($action_msgs[$i]['url'] ?? '');
-        $label = sprintf(__('Mensaje %d', 'ai-chatbot-pro'), $i + 1);
-        echo '<tr><th><label>' . esc_html($label) . '</label></th><td>';
-        echo '<input type="text" name="aicp_settings[lead_action_messages][' . $i . '][text]" value="' . $text . '" class="regular-text" style="margin-right:10px;" />';
-        echo '<input type="url" name="aicp_settings[lead_action_messages][' . $i . '][url]" value="' . $url . '" class="regular-text" placeholder="URL" />';
-        echo '</td></tr>';
-    }
-    echo '</tbody></table>';
-
-
     if (empty($leads)) {
         echo '<p>' . __('Aún no se han detectado leads.', 'ai-chatbot-pro') . '</p>';
         return;
