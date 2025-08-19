@@ -83,6 +83,10 @@ class AICP_Ajax_Handler {
 
         $api_key = $global_settings['api_key'] ?? '';
         if (empty($api_key)) { wp_send_json_error(['message' => __('La API Key de OpenAI no está configurada.', 'ai-chatbot-pro')]); }
+
+        $pinecone_api_key = $global_settings['pinecone_api_key'] ?? '';
+        $pinecone_host    = $global_settings['pinecone_host'] ?? '';
+        $pinecone_namespace = $s['pinecone_namespace'] ?? 'assistant_' . $assistant_id;
         
         // ¡LÓGICA SIMPLIFICADA! Solo usa las instrucciones básicas.
         $system_prompt_parts = [];
@@ -93,7 +97,57 @@ class AICP_Ajax_Handler {
         
         $system_prompt = implode("\n\n", $system_prompt_parts);
         if(empty($system_prompt)) $system_prompt = 'Eres un asistente de IA.';
-        
+
+        // Consulta a Pinecone para obtener contexto relevante
+        $context_snippets = [];
+        if ($pinecone_api_key && $pinecone_host && !empty($history)) {
+            $last_message = end($history);
+            $user_question = isset($last_message['content']) ? sanitize_textarea_field($last_message['content']) : '';
+            reset($history);
+
+            if ($user_question !== '') {
+                $embed_resp = wp_remote_post('https://api.openai.com/v1/embeddings', [
+                    'method'  => 'POST',
+                    'headers' => ['Content-Type'  => 'application/json', 'Authorization' => 'Bearer ' . $api_key],
+                    'body'    => json_encode(['model' => 'text-embedding-ada-002', 'input' => $user_question]),
+                    'timeout' => 60,
+                ]);
+
+                if (!is_wp_error($embed_resp)) {
+                    $embed_body = json_decode(wp_remote_retrieve_body($embed_resp), true);
+                    if (isset($embed_body['data'][0]['embedding'])) {
+                        $embedding = $embed_body['data'][0]['embedding'];
+                        $query_resp = wp_remote_post($pinecone_host . '/query', [
+                            'method'  => 'POST',
+                            'headers' => ['Content-Type'  => 'application/json', 'Api-Key' => $pinecone_api_key],
+                            'body'    => json_encode([
+                                'vector' => $embedding,
+                                'topK' => 3,
+                                'includeMetadata' => true,
+                                'namespace' => $pinecone_namespace,
+                            ]),
+                            'timeout' => 60,
+                        ]);
+
+                        if (!is_wp_error($query_resp)) {
+                            $query_body = json_decode(wp_remote_retrieve_body($query_resp), true);
+                            if (!empty($query_body['matches'])) {
+                                foreach ($query_body['matches'] as $match) {
+                                    if (!empty($match['metadata']['text'])) {
+                                        $context_snippets[] = sanitize_textarea_field($match['metadata']['text']);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!empty($context_snippets)) {
+            $system_prompt .= "\n\nCONTEXTO:\n" . implode("\n---\n", $context_snippets);
+        }
+
         $short_term_memory = array_slice($history, -4);
         $conversation = [['role' => 'system', 'content' => $system_prompt]];
         foreach ($short_term_memory as $item) { if (isset($item['role'], $item['content'])) { $conversation[] = ['role' => sanitize_key($item['role']), 'content' => sanitize_textarea_field($item['content'])]; } }
