@@ -17,6 +17,7 @@ class AICP_Pinecone_Manager {
         // Obtenemos los ajustes de ESE asistente para saber qué posts tiene seleccionados.
         $settings = get_post_meta($assistant_id, '_aicp_assistant_settings', true);
         $post_ids_to_index = $settings['training_post_ids'] ?? [];
+        $namespace = $settings['pinecone_namespace'] ?? 'assistant_' . $assistant_id;
         // --- FIN DE LA CORRECCIÓN ---
 
         if (empty($post_ids_to_index)) {
@@ -55,7 +56,7 @@ class AICP_Pinecone_Manager {
                     'id' => $vector_id,
                     'values' => $vector,
                     'metadata' => ['post_id' => $post->ID, 'text' => $chunk]
-                ]);
+                ], $namespace);
                 
                 if ($success) {
                     $processed_count++;
@@ -107,7 +108,7 @@ class AICP_Pinecone_Manager {
         return new WP_Error('api_error', 'Respuesta inesperada de OpenAI: ' . wp_remote_retrieve_body($response));
     }
 
-    private static function upsert_to_pinecone($vector_data) {
+    private static function upsert_to_pinecone($vector_data, $namespace) {
         $settings = get_option('aicp_settings');
         $pinecone_api_key = $settings['pinecone_api_key'] ?? '';
         $pinecone_host = $settings['pinecone_host'] ?? '';
@@ -119,7 +120,7 @@ class AICP_Pinecone_Manager {
         $response = wp_remote_post($pinecone_host . '/vectors/upsert', [
             'method'  => 'POST',
             'headers' => ['Content-Type'  => 'application/json', 'Api-Key' => $pinecone_api_key],
-            'body'    => json_encode(['vectors' => [$vector_data]]),
+            'body'    => json_encode(['vectors' => [$vector_data], 'namespace' => $namespace]),
             'timeout' => 60,
         ]);
         

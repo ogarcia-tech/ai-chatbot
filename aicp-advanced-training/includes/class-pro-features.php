@@ -27,9 +27,10 @@ class AICP_Pro_Features {
     public static function render_pro_training_tab() {
         global $post;
         $settings = get_post_meta($post->ID, '_aicp_assistant_settings', true);
-        
+
         $selected_posts = $settings['training_post_ids'] ?? [];
         $selected_cpts = $settings['training_post_types'] ?? [];
+        $namespace     = $settings['pinecone_namespace'] ?? 'assistant_' . $post->ID;
         $chunks_count = get_post_meta($post->ID, '_aicp_chunks_count', true) ?: 0;
 
         $all_pages = get_posts(['post_type' => 'page', 'posts_per_page' => -1, 'post_status' => 'publish', 'orderby' => 'title', 'order' => 'ASC']);
@@ -38,6 +39,12 @@ class AICP_Pro_Features {
         ?>
         <h4><?php _e('Entrenamiento Específico de Contenido', 'ai-chatbot-pro'); ?></h4>
         <p class="description"><?php _e('Selecciona las páginas y entradas exactas que quieres usar para entrenar a este asistente.', 'ai-chatbot-pro'); ?></p>
+
+        <p style="margin-top:20px;">
+            <label for="aicp_pinecone_namespace"><strong><?php _e('Pinecone Namespace', 'ai-chatbot-pro'); ?></strong></label><br />
+            <input type="text" id="aicp_pinecone_namespace" name="aicp_settings[pinecone_namespace]" value="<?php echo esc_attr($namespace); ?>" class="regular-text" />
+            <span class="description"><?php _e('Opcional: define un namespace específico para este asistente.', 'ai-chatbot-pro'); ?></span>
+        </p>
         
         <div style="display: flex; gap: 20px; margin-top: 20px; max-width: 900px;">
             <div style="flex: 1;">
@@ -101,6 +108,12 @@ class AICP_Pro_Features {
             $current_settings['training_post_types'] = array_map('sanitize_text_field', $new_settings['training_post_types']);
         } else {
             $current_settings['training_post_types'] = [];
+        }
+
+        // Guardar namespace de Pinecone
+        if (isset($new_settings['pinecone_namespace'])) {
+            $ns = sanitize_text_field($new_settings['pinecone_namespace']);
+            $current_settings['pinecone_namespace'] = $ns !== '' ? $ns : 'assistant_' . $post_id;
         }
 
         update_post_meta($post_id, '_aicp_assistant_settings', $current_settings);
