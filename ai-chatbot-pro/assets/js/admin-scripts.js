@@ -5,6 +5,15 @@ jQuery(function($) {
 
     if (typeof aicp_admin_params === 'undefined') return;
 
+    const aicpTemplates = {
+        basic_sales: {
+            persona: 'Te llamas Ana y eres una asistente virtual orientada a ventas, amable y persuasiva.',
+            objective: 'Mi objetivo es guiar al usuario hacia la compra y responder sus dudas para cerrar la venta.',
+            length_tone: 'Responde de forma breve, directa y entusiasta.',
+            example: 'Si un cliente pregunta por los planes disponibles, responde: "Contamos con opciones desde 20€ al mes. ¿Te gustaría que te envíe más detalles?"'
+        }
+    };
+
     // Inicializar color pickers
     $('.aicp-color-picker').wpColorPicker({
         change: function(event, ui) {
@@ -127,6 +136,28 @@ jQuery(function($) {
         });
     }
 
+    function handleTemplateSelect() {
+        const $persona = $('#aicp_persona');
+        const $objective = $('#aicp_objective');
+        const $lengthTone = $('#aicp_length_tone');
+        const $example = $('#aicp_example');
+
+        $('#aicp_template_select').on('change', function() {
+            const template = aicpTemplates[$(this).val()];
+            if (template) {
+                $persona.val(template.persona);
+                $objective.val(template.objective);
+                $lengthTone.val(template.length_tone);
+                $example.val(template.example);
+            } else {
+                $persona.val('');
+                $objective.val('');
+                $lengthTone.val('');
+                $example.val('');
+            }
+        });
+    }
+
 
     function handleLivePreview(element, value) {
         const $el = $(element);
@@ -182,6 +213,7 @@ jQuery(function($) {
         handleHistoryModal();
         handleDeleteLogFromModal();
         handleLeadQuestions();
+        handleTemplateSelect();
         initLivePreview();
     }
 });
